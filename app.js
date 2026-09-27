@@ -1,10 +1,14 @@
-const cfg = window.HASTREITER_CONFIG || {};
+const cfg = window.HASTREITER_CONFIG || {
+  supabaseUrl: "https://wjxppqxudiomfgfbeyav.supabase.co",
+  supabaseAnonKey: "sb_publishable_vSd_ftJq3_fNylpQ6pbVSQ_r7XChVQP",
+  adminEmail: "hastreiter-dienstleistungen@gmx.de"
+};
+
 let sb = null;
 let dataCache = { income: [], expense: [], orders: [], requests: [], appointments: [], cleaning: [], receipts: [] };
 
 const euro = n => new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(Number(n||0));
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-
 function showSection(id){
   document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
   document.getElementById(id)?.classList.add("active");
@@ -34,7 +38,6 @@ async function init(){
   else document.getElementById("loginScreen").classList.remove("hidden");
   sb.auth.onAuthStateChange((_event,session)=>{ if(session) enterApp(session); });
 }
-
 async function login(e){
   e.preventDefault();
   const email = document.getElementById("loginEmail").value.trim().toLowerCase();
@@ -50,16 +53,13 @@ async function login(e){
   if(error) err.textContent=error.message;
 }
 document.getElementById("loginForm").addEventListener("submit",login);
-
 async function enterApp(){
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
   document.getElementById("connectionStatus").textContent="Verbunden";
   await loadData();
 }
-
 document.getElementById("logoutBtn").addEventListener("click",async()=>{if(sb) await sb.auth.signOut();location.reload();});
-
 async function loadData(){
   if(!sb)return;
   const [income,expense,orders,requests,appointments,cleaning,receipts] = await Promise.all([
@@ -77,7 +77,6 @@ async function loadData(){
   };
   render();
 }
-
 function render(){
   const month = new Date().toISOString().slice(0,7);
   const mi = dataCache.income.filter(x=>String(x.datum||"").slice(0,7)===month).reduce((s,x)=>s+Number(x.betrag||0),0);
@@ -92,7 +91,6 @@ function render(){
   document.getElementById("totalIncome").textContent=euro(dataCache.income.reduce((s,x)=>s+Number(x.betrag||0),0));
   document.getElementById("totalExpense").textContent=euro(dataCache.expense.reduce((s,x)=>s+Number(x.betrag||0),0));
   document.getElementById("totalResult").textContent=euro(dataCache.income.reduce((s,x)=>s+Number(x.betrag||0),0)-dataCache.expense.reduce((s,x)=>s+Number(x.betrag||0),0));
-
   list("requestsList",dataCache.requests,r=>`<div class="item-card"><div><b>${esc(r.leistung)}</b><div>${esc(r.name)} · ${esc(r.ort||"")}</div><small>${esc(r.beschreibung||"Keine Beschreibung")}</small></div><span class="badge">${esc(r.status||"Neu")}</span></div>`);
   list("incomeList",dataCache.income,r=>`<div class="item-card"><div><b>${esc(r.datum)}</b><div>${esc(r.beschreibung||"Einnahme")}</div></div><strong>${euro(r.betrag)}</strong></div>`);
   list("expenseList",dataCache.expense,r=>`<div class="item-card"><div><b>${esc(r.datum)}</b><div>${esc(r.lieferant||r.beschreibung||"Ausgabe")}</div></div><strong>${euro(r.betrag)}</strong></div>`);
