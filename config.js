@@ -3,6 +3,6 @@
 // Niemals einen service_role key hier eintragen!
 window.HASTREITER_CONFIG = {
   supabaseUrl: "https://wjxppqxudiomfgfbeyav.supabase.co",
-  supabaseAnonKey: "HIER_DEN_ANON_KEY_EINTRAGEN",
+  supabaseAnonKey: "sb_publishable_vSd_ftJq3_fNylpQ6pbVSQ_r7XChVQP",
   adminEmail: "hastreiter-dienstleistungen@gmx.de"
 };
