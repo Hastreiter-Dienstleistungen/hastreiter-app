@@ -18,8 +18,14 @@ document.querySelectorAll("[data-section-link]").forEach(b=>b.addEventListener("
 document.getElementById("menuBtn")?.addEventListener("click",()=>document.querySelector(".sidebar").classList.toggle("open"));
 
 async function init(){
-  if(!window.supabase || !cfg.supabaseUrl || cfg.supabaseAnonKey.includes("HIER_")){
-    document.getElementById("connectionStatus").textContent="Supabase noch nicht konfiguriert";
+  if(!window.supabase){
+    document.getElementById("connectionStatus").textContent="Supabase-Bibliothek nicht geladen";
+    document.getElementById("loginError").textContent="Die Supabase-Bibliothek konnte nicht geladen werden. Bitte Seite mit Strg+F5 neu laden.";
+    return;
+  }
+  if(!cfg.supabaseUrl || !cfg.supabaseAnonKey || cfg.supabaseAnonKey.includes("HIER_")){
+    document.getElementById("connectionStatus").textContent="Supabase-Konfiguration fehlt";
+    document.getElementById("loginError").textContent="Die Supabase-Konfiguration wurde nicht geladen.";
     return;
   }
   sb = window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
