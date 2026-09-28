@@ -1,0 +1,25 @@
+*{box-sizing:border-box}
+body{margin:0;background:#eef5f0;color:#17231b;font-family:Arial,Helvetica,sans-serif}
+.page{max-width:920px;margin:0 auto;padding:28px 16px 60px}
+.hero{text-align:center;padding:20px 10px 28px}
+.logo{width:180px;max-width:70%;background:#fff;border-radius:18px;padding:10px}
+h1{font-size:36px;margin:18px 0 8px}
+.hero p{font-size:17px;color:#5d6b62;margin:0 auto;max-width:650px;line-height:1.5}
+.card{background:#fff;border-radius:22px;padding:28px;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+h2{font-size:21px;margin:0 0 16px;padding-top:6px}
+h2:not(:first-child){margin-top:30px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+label{display:flex;flex-direction:column;gap:7px;font-weight:600;margin-bottom:16px}
+input,select,textarea{font:inherit;border:1px solid #ccd8cf;border-radius:11px;padding:13px;background:#fff;color:#17231b}
+textarea{resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid #27a855;outline-offset:1px}
+.check{flex-direction:row;align-items:flex-start;font-weight:400;margin-top:20px}
+.check input{margin-top:3px}
+button{width:100%;border:0;border-radius:12px;background:#087a3f;color:#fff;font-size:17px;font-weight:700;padding:15px;cursor:pointer;margin-top:10px}
+button:disabled{opacity:.6;cursor:wait}
+.message{margin-top:15px;padding:12px;border-radius:10px;display:none}
+.message.success{display:block;background:#e7f7ec;color:#126b36}
+.message.error{display:block;background:#fdeaea;color:#a32121}
+small{font-weight:400;color:#68756d;line-height:1.4}
+.hidden{display:none}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.card{padding:20px}h1{font-size:30px}}

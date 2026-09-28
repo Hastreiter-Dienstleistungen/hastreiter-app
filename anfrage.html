@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anfrage stellen | Hastreiter Dienstleistungen</title>
+  <meta name="description" content="Unverbindliche Anfrage für Baumschnitt, Heckenschnitt, Rasenpflege, Gartenpflege, Baumfällung, Winterdienst, Reinigung und Entrümpelung bei Hastreiter Dienstleistungen.">
+  <meta name="robots" content="index,follow">
+  <link rel="stylesheet" href="anfrage.css">
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <img src="logo.jpeg" alt="Hastreiter Dienstleistungen" class="logo">
+      <h1>Anfrage stellen</h1>
+      <p>Beschreiben Sie kurz, welche Arbeiten Sie benötigen. Wir melden uns anschließend bei Ihnen.</p>
+    </section>
+
+    <form id="requestForm" class="card">
+      <h2>Ihre Kontaktdaten</h2>
+
+      <div class="grid">
+        <label>Name *
+          <input id="name" name="name" required>
+        </label>
+        <label>Telefon *
+          <input id="telefon" name="telefon" type="tel" required>
+        </label>
+        <label>E-Mail
+          <input id="email" name="email" type="email">
+        </label>
+        <label>Straße / Hausnummer *
+          <input id="strasse" name="strasse" required>
+        </label>
+        <label>PLZ *
+          <input id="plz" name="plz" inputmode="numeric" required>
+        </label>
+        <label>Ort *
+          <input id="ort" name="ort" required>
+        </label>
+      </div>
+
+      <h2>Gewünschte Leistung</h2>
+      <label>Leistung *
+        <select id="leistung" name="leistung" required>
+          <option value="">Bitte auswählen</option>
+          <option>Baumschnitt</option>
+          <option>Heckenschnitt</option>
+          <option>Rasenpflege</option>
+          <option>Gartenpflege</option>
+          <option>Baumfällung</option>
+          <option>Winterdienst</option>
+          <option>Reinigung</option>
+          <option>Entrümpelung</option>
+          <option>Sonstige Arbeiten</option>
+        </select>
+      </label>
+
+      <label>Beschreibung der Arbeiten *
+        <textarea id="beschreibung" name="beschreibung" rows="6" required placeholder="Was soll gemacht werden? Größe, Menge, Besonderheiten usw."></textarea>
+      </label>
+
+      <h2>Wunschtermin</h2>
+      <div class="grid">
+        <label>Datum
+          <input id="gewuenschter_termin" name="gewuenschter_termin" type="date">
+        </label>
+        <label>Uhrzeit
+          <select id="uhrzeit" name="uhrzeit">
+            <option value="">Bitte auswählen</option>
+          </select>
+        </label>
+        <label>Häufigkeit
+          <select id="haeufigkeit" name="haeufigkeit">
+            <option>Einmalig</option>
+            <option>Jährlich</option>
+            <option>Regelmäßig</option>
+          </select>
+        </label>
+        <label id="regelmaessigWrap" class="hidden">Bei regelmäßig
+          <select id="regelmaessig_intervall" name="regelmaessig_intervall">
+            <option>Jede Woche</option>
+            <option>Alle 2 Wochen</option>
+            <option>Alle 3 Wochen</option>
+            <option>Monatlich</option>
+          </select>
+        </label>
+      </div>
+
+      <label>Fotos
+        <input id="fotos" type="file" accept="image/*" multiple>
+        <small>Fotos können ausgewählt werden. Die automatische Fotoablage in Drive/Supabase wird als nächster Schritt ergänzt.</small>
+      </label>
+
+      <label class="check">
+        <input id="privacy" type="checkbox" required>
+        <span>Ich stimme zu, dass meine Angaben zur Bearbeitung meiner Anfrage gespeichert und verarbeitet werden. *</span>
+      </label>
+
+      <button id="submitBtn" type="submit">Anfrage absenden</button>
+      <div id="message" class="message" role="status"></div>
+    </form>
+  </main>
+
+  <script src="anfrage.js"></script>
+</body>
+</html>
