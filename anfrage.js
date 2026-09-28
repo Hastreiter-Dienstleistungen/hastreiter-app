@@ -24,10 +24,6 @@ function show(type,text){
   msg.textContent=text;
 }
 
-function makeId(){
-  return "ANF-"+Date.now()+"-"+Math.floor(Math.random()*9000+1000);
-}
-
 async function syncSheets(data){
   if(!cfg.sheetsWebAppUrl) return {sent:false};
   try{
@@ -40,7 +36,7 @@ async function syncSheets(data){
     try{result=await r.json()}catch(_){}
     return {sent:true,result};
   }catch(error){
-    console.error(error);
+    console.error("Google Sheets:",error);
     return {sent:false,error:error.message};
   }
 }
@@ -49,7 +45,7 @@ form.addEventListener("submit",async e=>{
   e.preventDefault();
 
   if(!sb){
-    show("error","Die Anfrage-Seite konnte keine Verbindung herstellen. Bitte später erneut versuchen.");
+    show("error","Die Anfrage-Seite konnte keine Verbindung zu Supabase herstellen.");
     return;
   }
 
@@ -70,10 +66,11 @@ form.addEventListener("submit",async e=>{
     ort:String(fd.get("ort")||"").trim(),
     leistung:String(fd.get("leistung")||"").trim(),
     beschreibung:String(fd.get("beschreibung")||"").trim(),
-    gewuenschter_termin:String(fd.get("gewuenschter_termin")||"").trim(),
-    uhrzeit:String(fd.get("uhrzeit")||"").trim(),
+    gewuenschter_termin:String(fd.get("gewuenschter_termin")||"").trim() || null,
+    uhrzeit:String(fd.get("uhrzeit")||"").trim() || null,
     haeufigkeit:String(fd.get("haeufigkeit")||"Einmalig").trim(),
-    status:"Neu"
+    status:"Neu",
+    privacy_consent:true
   };
 
   if(request.haeufigkeit==="Regelmäßig" && interval){
@@ -81,27 +78,34 @@ form.addEventListener("submit",async e=>{
   }
 
   try{
-    const {data,error}=await sb.from("anfragen").insert(request).select().single();
-    if(error) throw error;
+    const {data,error}=await sb
+      .from("anfragen")
+      .insert(request)
+      .select()
+      .single();
+
+    if(error){
+      console.error("Supabase Anfrage:", error);
+      throw new Error(error.message);
+    }
 
     const sheet=await syncSheets({
-      anfrage_id:data.id || makeId(),
+      anfrage_id:data.id,
       erstellt_am:data.erstellt_am || new Date().toISOString(),
       ...request
     });
 
     if(!sheet.sent){
-      show("success","Vielen Dank! Ihre Anfrage wurde erfolgreich übermittelt. Die Anfrage wird intern weiterverarbeitet.");
-    }else{
-      show("success","Vielen Dank! Ihre Anfrage wurde erfolgreich übermittelt.");
+      console.warn("Anfrage in Supabase gespeichert, Google Sheets nicht bestätigt.");
     }
 
+    show("success","Vielen Dank! Ihre Anfrage wurde erfolgreich übermittelt.");
     form.reset();
     regularWrap.classList.add("hidden");
 
   }catch(error){
     console.error(error);
-    show("error","Die Anfrage konnte leider nicht gesendet werden. Bitte versuchen Sie es später erneut.");
+    show("error","Die Anfrage konnte nicht gespeichert werden: " + error.message);
   }finally{
     btn.disabled=false;
     btn.textContent="Anfrage absenden";
