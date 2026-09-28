@@ -233,39 +233,93 @@ function renderRequests(){
   const el = document.getElementById("requestsList");
   if(!el) return;
 
+  // Suchfeld für Kunden/Anfragen automatisch oberhalb der Liste ergänzen.
+  let search = document.getElementById("requestSearch");
+  if(!search){
+    search = document.createElement("input");
+    search.id = "requestSearch";
+    search.type = "search";
+    search.placeholder = "Kunden suchen – Name, Telefon, E-Mail oder Ort";
+    search.className = "request-search";
+    el.parentElement?.insertBefore(search, el);
+    search.addEventListener("input", () => renderRequests());
+  }
+
+  const query = String(search.value || "").trim().toLowerCase();
+
+  const filtered = dataCache.requests.filter(r => {
+    if(!query) return true;
+    const haystack = [
+      r.name, r.telefon, r.email, r.strasse, r.plz, r.ort,
+      r.leistung, r.beschreibung, r.status
+    ].join(" ").toLowerCase();
+    return haystack.includes(query);
+  });
+
   if(!dataCache.requests.length){
     el.innerHTML = `<div class="empty">Noch keine Anfragen vorhanden.</div>`;
     return;
   }
 
-  el.innerHTML = dataCache.requests.map(r => {
+  if(!filtered.length){
+    el.innerHTML = `<div class="empty">Keine passende Anfrage gefunden.</div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.map(r => {
     const id = r.id || r.anfrage_id || "";
     const status = r.status || "Neu";
+    const safeId = esc(id);
 
     return `
-      <div class="item-card request-card" data-request-id="${esc(id)}">
+      <div class="item-card request-card" data-request-id="${safeId}">
         <div class="request-main">
           <div>
-            <b>${esc(r.leistung || "Anfrage")}</b>
-            <div>${esc(r.name || "")} · ${esc(r.ort || "")}</div>
-            <small>${esc(r.beschreibung || "Keine Beschreibung")}</small>
+            <b>${esc(r.name || "Unbekannter Kunde")}</b>
+            <div>${esc(r.leistung || "Anfrage")} · ${esc(r.ort || "")}</div>
+            <small>${esc(r.telefon || "")} ${r.email ? "· " + esc(r.email) : ""}</small>
           </div>
 
-          <select class="request-status" data-request-id="${esc(id)}">
+          <select class="request-status" data-request-id="${safeId}">
             ${requestStatuses(status)}
           </select>
         </div>
 
         <div class="request-actions">
+          <button type="button" class="btn-secondary request-open"
+                  data-request-id="${safeId}">
+            Kunde / Anfrage öffnen
+          </button>
+
           <button type="button" class="btn-secondary request-offer"
-                  data-request-id="${esc(id)}">
+                  data-request-id="${safeId}">
             Daten für Angebot
           </button>
 
           <button type="button" class="btn-danger request-delete"
-                  data-request-id="${esc(id)}">
+                  data-request-id="${safeId}">
             🗑️ Löschen
           </button>
+        </div>
+
+        <div class="request-details" id="request-details-${safeId}" hidden>
+          <div style="margin-top:12px;padding:14px;border-radius:10px;background:#f6f8f7;">
+            <h3 style="margin:0 0 10px;">Kundendaten</h3>
+            <div><b>Name:</b> ${esc(r.name || "-")}</div>
+            <div><b>Telefon:</b> ${esc(r.telefon || "-")}</div>
+            <div><b>E-Mail:</b> ${esc(r.email || "-")}</div>
+            <div><b>Adresse:</b> ${esc(r.strasse || "-")}, ${esc(r.plz || "")} ${esc(r.ort || "")}</div>
+
+            <h3 style="margin:16px 0 10px;">Anfrage</h3>
+            <div><b>Leistung:</b> ${esc(r.leistung || "-")}</div>
+            <div><b>Beschreibung:</b> ${esc(r.beschreibung || "-")}</div>
+            <div><b>Wunschtermin:</b> ${esc(r.gewuenschter_termin || "-")}</div>
+            <div><b>Uhrzeit:</b> ${esc(r.uhrzeit || "-")}</div>
+            <div><b>Häufigkeit:</b> ${esc(r.haeufigkeit || "-")}</div>
+            <div><b>Status:</b> ${esc(status)}</div>
+            <div><b>Anfrage-ID:</b> ${safeId}</div>
+            ${r.fotos ? `<div><b>Fotos:</b> ${esc(r.fotos)}</div>` : ""}
+          </div>
         </div>
       </div>
     `;
@@ -273,7 +327,6 @@ function renderRequests(){
 
   bindRequestActions();
 }
-
 function requestStatuses(current){
   const statuses = [
     "Neu",
@@ -298,9 +351,26 @@ function bindRequestActions(){
     });
   });
 
+  document.querySelectorAll(".request-open").forEach(button => {
+    button.addEventListener("click", e => {
+      const id = e.currentTarget.dataset.requestId;
+      const details = document.getElementById("request-details-" + CSS.escape(id));
+      if(!details) return;
+
+      const isHidden = details.hasAttribute("hidden");
+      if(isHidden){
+        details.removeAttribute("hidden");
+        e.currentTarget.textContent = "Kunde / Anfrage schließen";
+      } else {
+        details.setAttribute("hidden", "");
+        e.currentTarget.textContent = "Kunde / Anfrage öffnen";
+      }
+    });
+  });
+
   document.querySelectorAll(".request-delete").forEach(button => {
     button.addEventListener("click", async e => {
-      const id = e.target.dataset.requestId;
+      const id = e.currentTarget.dataset.requestId;
 
       if(!confirm("Möchtest du diese Anfrage wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.")){
         return;
@@ -312,7 +382,7 @@ function bindRequestActions(){
 
   document.querySelectorAll(".request-offer").forEach(button => {
     button.addEventListener("click", e => {
-      const id = e.target.dataset.requestId;
+      const id = e.currentTarget.dataset.requestId;
       const r = dataCache.requests.find(x =>
         String(x.id || x.anfrage_id || "") === String(id)
       );
@@ -338,7 +408,6 @@ Häufigkeit: ${r.haeufigkeit || ""}`;
     });
   });
 }
-
 async function changeRequestStatus(id, status){
   if(!id || !sb) return;
 
