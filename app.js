@@ -896,10 +896,35 @@ async function saveReviewedReceipt(originalReceipt){
       drive_datei_id: receipt.drive_datei_id || null
     };
 
-    const expenseResult = await sb.from("ausgaben").insert(expensePayload);
+    const expenseResult = await sb.from("ausgaben").insert(expensePayload).select("*").single();
     if(expenseResult.error){
-      // Der Beleg bleibt trotzdem erhalten. Der Fehler wird klar angezeigt.
       throw new Error("Beleg gespeichert, aber Ausgabe konnte nicht gespeichert werden: " + expenseResult.error.message);
+    }
+
+    // Sicherheitskorrektur: Bei älteren/abweichenden Ausgaben-Schemata kann
+    // der Betrag durch einen Default/Trigger als 0 zurückkommen. Deshalb
+    // setzen wir die finanziellen Werte nach dem Insert nochmals explizit.
+    if(expenseResult.data?.id){
+      const { error: expenseUpdateError } = await sb
+        .from("ausgaben")
+        .update({
+          datum: receipt.belegdatum,
+          lieferant: receipt.lieferant,
+          beschreibung: receipt.beschreibung,
+          betrag: Number(receipt.brutto),
+          netto: receipt.netto == null ? null : Number(receipt.netto),
+          mwst: Number(receipt.mwst || 0),
+          brutto: Number(receipt.brutto),
+          kategorie: receipt.kategorie,
+          quelle: receipt.dateiname || null,
+          rechnungsnummer: receipt.rechnungsnummer || null,
+          drive_datei_id: receipt.drive_datei_id || null
+        })
+        .eq("id", expenseResult.data.id);
+
+      if(expenseUpdateError){
+        throw new Error("Ausgabe wurde angelegt, konnte aber nicht mit dem Bruttobetrag aktualisiert werden: " + expenseUpdateError.message);
+      }
     }
 
     const sheetResponse = await fetch(cfg.sheetsWebAppUrl, {
