@@ -700,7 +700,7 @@ function openReceiptReview(receipt, originalFile){
         ${receiptField("receiptSupplier","Lieferant",receipt.lieferant || "")}
         ${receiptField("receiptNumber","Rechnungs-/Belegnummer",receipt.rechnungsnummer || "")}
         ${receiptField("receiptDate","Belegdatum",receipt.belegdatum || "","date")}
-        ${receiptField("receiptCategory","Kategorie",receipt.kategorie || "")}
+        ${receiptCategoryField(receipt.kategorie || "")}
         ${receiptField("receiptNet","Netto",moneyInputValue(receipt.netto))}
         ${receiptField("receiptVat","MwSt.",moneyInputValue(receipt.mwst ?? 0))}
         ${receiptField("receiptGross","Brutto",moneyInputValue(receipt.brutto ?? receipt.betrag))}
@@ -725,6 +725,33 @@ function openReceiptReview(receipt, originalFile){
   document.getElementById("receiptReviewClose")?.addEventListener("click", () => modal.remove());
   document.getElementById("receiptCancel")?.addEventListener("click", () => modal.remove());
   document.getElementById("receiptSave")?.addEventListener("click", () => saveReviewedReceipt(receipt));
+}
+
+function receiptCategoryField(value){
+  const categories = [
+    "Fahrzeug",
+    "Kraftstoff",
+    "Material",
+    "Werkzeug",
+    "Büro",
+    "Versicherung",
+    "Telefon / Internet",
+    "Werbung",
+    "Fremdleistungen",
+    "Sonstiges"
+  ];
+
+  return `
+    <label style="display:flex;flex-direction:column;gap:5px;">
+      <span style="font-weight:600;">Kategorie</span>
+      <select id="receiptCategory" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #d7ddd8;border-radius:10px;background:#fff;">
+        <option value="">Bitte auswählen</option>
+        ${categories.map(category => `
+          <option value="${esc(category)}" ${category === value ? "selected" : ""}>${esc(category)}</option>
+        `).join("")}
+      </select>
+    </label>
+  `;
 }
 
 function receiptField(id,label,value,type="text"){
