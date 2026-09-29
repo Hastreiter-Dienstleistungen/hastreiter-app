@@ -1,3 +1,4 @@
+/* HASTREITER APP – KOMPLETTVERSION – 2026-09-29 – Belegscanner/ausgaben Fix */
 const cfg = window.HASTREITER_CONFIG || {
   supabaseUrl: "https://wjxppqxudiomfgfbeyav.supabase.co",
   supabaseAnonKey: "sb_publishable_vSd_ftJq3_fNylpQ6pbVSQ_r7XChVQP",
@@ -824,7 +825,17 @@ function moneyInputValue(value){
 }
 
 function parseUiMoney(value){
-  const s = String(value || "").trim().replace(/\./g,"").replace(",",".");
+  let s = String(value ?? "").trim();
+  if(!s) return null;
+
+  // Deutsche Schreibweise: 1.234,56
+  if(s.includes(",")){
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else {
+    // Englische/HTML-Schreibweise: 1234.56
+    s = s.replace(/[^0-9.-]/g, "");
+  }
+
   const n = Number(s);
   return Number.isFinite(n) ? Number(n.toFixed(2)) : null;
 }
