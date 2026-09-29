@@ -699,7 +699,7 @@ function openReceiptReview(receipt, originalFile){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         ${receiptField("receiptSupplier","Lieferant",receipt.lieferant || "")}
         ${receiptField("receiptNumber","Rechnungs-/Belegnummer",receipt.rechnungsnummer || "")}
-        ${receiptField("receiptDate","Belegdatum",receipt.belegdatum || "","date")}
+        ${receiptField("receiptDate","Belegdatum",dateInputValue(receipt.belegdatum),"date")}
         ${receiptCategoryField(receipt.kategorie || "")}
         ${receiptField("receiptNet","Netto",moneyInputValue(receipt.netto))}
         ${receiptField("receiptVat","MwSt.",moneyInputValue(receipt.mwst ?? 0))}
@@ -752,6 +752,28 @@ function receiptCategoryField(value){
       </select>
     </label>
   `;
+}
+
+function dateInputValue(value){
+  const s = String(value || "").trim();
+  if(!s) return "";
+
+  // Bereits korrektes HTML-Datumsformat
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+  // Deutsches Format: TT.MM.JJJJ
+  let m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if(m){
+    return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+  }
+
+  // Weitere häufige OCR-Formate
+  m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if(m){
+    return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+  }
+
+  return s;
 }
 
 function receiptField(id,label,value,type="text"){
