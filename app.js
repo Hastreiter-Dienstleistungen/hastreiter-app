@@ -722,6 +722,14 @@ function openReceiptReview(receipt, originalFile){
 
   document.body.appendChild(modal);
 
+  // Datum nach dem Einfügen nochmals explizit setzen. Dadurch bleibt es
+  // auch in Browsern mit deutscher Datumsdarstellung als echtes ISO-Datum erhalten.
+  const dateEl = document.getElementById("receiptDate");
+  if(dateEl){
+    const isoDate = dateInputValue(receipt.belegdatum);
+    if(isoDate) dateEl.value = isoDate;
+  }
+
   document.getElementById("receiptReviewClose")?.addEventListener("click", () => modal.remove());
   document.getElementById("receiptCancel")?.addEventListener("click", () => modal.remove());
   document.getElementById("receiptSave")?.addEventListener("click", () => saveReviewedReceipt(receipt));
@@ -785,6 +793,31 @@ function receiptField(id,label,value,type="text"){
   `;
 }
 
+function getReceiptDateForSave(){
+  const el = document.getElementById("receiptDate");
+  if(!el) return "";
+
+  // Bei type=date liefert .value normalerweise YYYY-MM-DD.
+  // Falls der Browser/Cache hier trotzdem leer liefert, greifen wir auf
+  // den gesetzten value-Attributwert zurück.
+  let value = String(el.value || el.getAttribute("value") || "").trim();
+
+  if(/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+  // Deutsches Anzeigeformat sicherheitshalber ebenfalls akzeptieren.
+  const m = value.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if(m){
+    return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+  }
+
+  const m2 = value.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if(m2){
+    return `${m2[3]}-${String(m2[2]).padStart(2,"0")}-${String(m2[1]).padStart(2,"0")}`;
+  }
+
+  return value;
+}
+
 function moneyInputValue(value){
   if(value === null || value === undefined || value === "") return "";
   return String(Number(value)).replace(".",",");
@@ -810,7 +843,7 @@ async function saveReviewedReceipt(originalReceipt){
       ...originalReceipt,
       lieferant: document.getElementById("receiptSupplier")?.value.trim() || "",
       rechnungsnummer: document.getElementById("receiptNumber")?.value.trim() || "",
-      belegdatum: document.getElementById("receiptDate")?.value || "",
+      belegdatum: getReceiptDateForSave(),
       kategorie: document.getElementById("receiptCategory")?.value.trim() || "",
       netto: parseUiMoney(document.getElementById("receiptNet")?.value),
       mwst: parseUiMoney(document.getElementById("receiptVat")?.value) ?? 0,
@@ -820,7 +853,7 @@ async function saveReviewedReceipt(originalReceipt){
 
     receipt.betrag = receipt.brutto;
 
-    if(!receipt.belegdatum) throw new Error("Bitte ein Belegdatum eintragen.");
+    if(!receipt.belegdatum) throw new Error("Bitte ein Belegdatum eintragen. Bitte das Datum einmal anklicken und auswählen.");
     if(receipt.brutto === null) throw new Error("Bitte einen Bruttobetrag eintragen.");
 
     const { data: saved, error } = await sb.from("belege").insert({
