@@ -1,154 +1,93 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Hastreiter Dienstleistungen – Verwaltungs- und Anfrage-App">
-  <title>Hastreiter Dienstleistungen</title>
-  <link rel="icon" href="logo.jpeg">
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Hastreiter Dienstleistungen – Verwaltungs- und Anfrage-App">
+<title>Hastreiter Dienstleistungen</title>
+<link rel="icon" href="logo.jpeg">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="loginScreen" class="login-screen">
-    <div class="login-card">
-      <img src="logo.jpeg" class="login-logo" alt="Hastreiter Dienstleistungen">
-      <h1>Anmeldung</h1>
-      <p>Interner Bereich von Hastreiter Dienstleistungen</p>
-      <form id="loginForm">
-        <label>E-Mail
-          <input id="loginEmail" type="email" value="hastreiter-dienstleistungen@gmx.de" autocomplete="username" required>
-        </label>
-        <label>Passwort
-          <input id="loginPassword" type="password" autocomplete="current-password" required>
-        </label>
-        <button class="primary-btn" type="submit">Anmelden</button>
-        <div id="loginError" class="error"></div>
-      </form>
-    </div>
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <img src="logo.jpeg" class="login-logo" alt="Hastreiter Dienstleistungen">
+    <h1>Anmeldung</h1><p>Interner Bereich von Hastreiter Dienstleistungen</p>
+    <form id="loginForm">
+      <label>E-Mail<input id="loginEmail" type="email" value="hastreiter-dienstleistungen@gmx.de" autocomplete="username" required></label>
+      <label>Passwort<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+      <button class="primary-btn" type="submit">Anmelden</button><div id="loginError" class="error"></div>
+    </form>
   </div>
-
-  <div id="app" class="app hidden">
-    <aside class="sidebar">
-      <div class="brand">
-        <img src="logo.jpeg" alt="Hastreiter Dienstleistungen">
-      </div>
-      <nav id="nav">
-        <button class="nav-item active" data-section="dashboard">⌂ <span>Dashboard</span></button>
-        <button class="nav-item" data-section="anfragen">✉ <span>Anfragen</span><b id="requestBadge">0</b></button>
-        <button class="nav-item" data-section="einnahmen">↗ <span>Einnahmen</span></button>
-        <button class="nav-item" data-section="ausgaben">↘ <span>Ausgaben</span></button>
-        <button class="nav-item" data-section="belege">▣ <span>Belege</span></button>
-        <button class="nav-item" data-section="auftraege">▤ <span>Aufträge</span></button>
-        <button class="nav-item" data-section="reinigung">⌁ <span>Reinigung</span></button>
-        <button class="nav-item" data-section="kalender">□ <span>Kalender</span></button>
-        <button class="nav-item" data-section="auswertungen">▥ <span>Auswertungen</span></button>
-      </nav>
-      <button id="logoutBtn" class="logout">Abmelden</button>
-    </aside>
-
-    <main class="main">
-      <header class="topbar">
-        <button id="menuBtn" class="mobile-menu">☰</button>
-        <div>
-          <strong id="pageTitle">Dashboard</strong>
-          <small>Hastreiter Dienstleistungen</small>
-        </div>
-        <div class="top-actions">
-          <span id="connectionStatus" class="status">Verbinde...</span>
-          <span class="user-pill">H</span>
-        </div>
-      </header>
-
-      <section id="dashboard" class="section active">
-        <div class="hero">
-          <div>
-            <span class="eyebrow">HASTREITER DIENSTLEISTUNGEN</span>
-            <h1>Guten Tag!</h1>
-            <p>Hier findest du den aktuellen Überblick über dein Unternehmen.</p>
-          </div>
-          <img src="logo.jpeg" alt="Hastreiter" class="hero-logo">
-        </div>
-
-        <div class="stats">
-          <article class="stat green"><span>Einnahmen</span><strong id="statIncome">0,00 €</strong><small>aktueller Monat</small></article>
-          <article class="stat red"><span>Ausgaben</span><strong id="statExpense">0,00 €</strong><small>aktueller Monat</small></article>
-          <article class="stat blue"><span>Offene Aufträge</span><strong id="statOrders">0</strong><small>aktuell</small></article>
-          <article class="stat orange"><span>Neue Anfragen</span><strong id="statRequests">0</strong><small>noch nicht bearbeitet</small></article>
-        </div>
-
-        <div class="grid-two">
-          <article class="panel">
-            <div class="panel-head"><h2>Einnahmen & Ausgaben</h2></div>
-            <div class="chart-wrap"><canvas id="financeChart" width="700" height="280"></canvas></div>
-          </article>
-          <article class="panel">
-            <div class="panel-head"><h2>Nächste Termine</h2><button class="link-btn" data-section-link="kalender">Alle anzeigen</button></div>
-            <div id="nextAppointments" class="list"></div>
-          </article>
-        </div>
-
-        <div class="quick-grid">
-          <button class="quick green-bg" data-section-link="belege"><span>▣</span><b>Beleg erfassen</b><small>Foto / OCR</small></button>
-          <button class="quick orange-bg" data-section-link="anfragen"><span>✉</span><b>Anfragen</b><small>Kundenanfragen bearbeiten</small></button>
-          <button class="quick blue-bg" data-section-link="auftraege"><span>▤</span><b>Neuer Auftrag</b><small>Aufträge verwalten</small></button>
-          <button class="quick teal-bg" data-section-link="reinigung"><span>⌁</span><b>Reinigung</b><small>Reinigungsaufträge</small></button>
-        </div>
-      </section>
-
-      <section id="anfragen" class="section">
-        <div class="section-head"><div><h1>Anfragen</h1><p>Kundenanfragen aus dem öffentlichen Formular.</p></div></div>
-        <div class="panel"><div id="requestsList" class="table-list"></div></div>
-      </section>
-
-      <section id="einnahmen" class="section">
-        <div class="section-head"><div><h1>Einnahmen</h1><p>Erfasste Einnahmen und Monatsübersicht.</p></div></div>
-        <div class="panel"><div id="incomeList" class="table-list"></div></div>
-      </section>
-
-      <section id="ausgaben" class="section">
-        <div class="section-head"><div><h1>Ausgaben</h1><p>Erfasste Betriebsausgaben.</p></div></div>
-        <div class="panel"><div id="expenseList" class="table-list"></div></div>
-      </section>
-
-      <section id="belege" class="section">
-        <div class="section-head"><div><h1>Belege</h1><p>Belege sammeln und später automatisch per OCR auslesen.</p></div></div>
-        <div class="upload-card">
-          <div class="upload-icon">📷</div>
-          <h2>Beleg erfassen</h2>
-          <p>Die OCR-Anbindung kommt als nächster Schritt. Hier wird später ein Foto aufgenommen und automatisch erkannt.</p>
-          <input id="receiptFile" type="file" accept="image/*,.pdf" capture="environment">
-        </div>
-        <div class="panel"><div id="receiptList" class="table-list"></div></div>
-      </section>
-
-      <section id="auftraege" class="section">
-        <div class="section-head"><div><h1>Aufträge</h1><p>Garten-, Baum-, Winterdienst- und sonstige Aufträge.</p></div></div>
-        <div class="panel"><div id="ordersList" class="table-list"></div></div>
-      </section>
-
-      <section id="reinigung" class="section">
-        <div class="section-head"><div><h1>Reinigung</h1><p>Reinigungsaufträge getrennt verwalten.</p></div></div>
-        <div class="panel"><div id="cleaningList" class="table-list"></div></div>
-      </section>
-
-      <section id="kalender" class="section">
-        <div class="section-head"><div><h1>Kalender</h1><p>Termine und geplante Arbeiten.</p></div></div>
-        <div class="panel"><div id="calendarList" class="calendar-list"></div></div>
-      </section>
-
-      <section id="auswertungen" class="section">
-        <div class="section-head"><div><h1>Auswertungen</h1><p>Einnahmen, Ausgaben und Ergebnis.</p></div></div>
-        <div class="stats">
-          <article class="stat green"><span>Gesamteinnahmen</span><strong id="totalIncome">0,00 €</strong></article>
-          <article class="stat red"><span>Gesamtausgaben</span><strong id="totalExpense">0,00 €</strong></article>
-          <article class="stat blue"><span>Ergebnis</span><strong id="totalResult">0,00 €</strong></article>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script src="config.js?v=2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=2"></script>
-</body>
-</html>
+</div>
+<div id="app" class="app hidden">
+<aside class="sidebar"><div class="brand"><img src="logo.jpeg" alt="Hastreiter Dienstleistungen"></div>
+<nav id="nav">
+<button class="nav-item active" data-section="dashboard">⌂ <span>Dashboard</span></button>
+<button class="nav-item" data-section="anfragen">✉ <span>Anfragen</span><b id="requestBadge">0</b></button>
+<button class="nav-item" data-section="einnahmen">↗ <span>Einnahmen</span></button>
+<button class="nav-item" data-section="ausgaben">↘ <span>Ausgaben</span></button>
+<button class="nav-item" data-section="belege">▣ <span>Belege</span></button>
+<button class="nav-item" data-section="auftraege">▤ <span>Aufträge</span></button>
+<button class="nav-item" data-section="reinigung">⌁ <span>Reinigung</span></button>
+<button class="nav-item" data-section="kalender">□ <span>Kalender</span></button>
+<button class="nav-item" data-section="auswertungen">▥ <span>Auswertungen</span></button>
+</nav><button id="logoutBtn" class="logout">Abmelden</button></aside>
+<main class="main">
+<header class="topbar"><button id="menuBtn" class="mobile-menu">☰</button><div><strong id="pageTitle">Dashboard</strong><small>Hastreiter Dienstleistungen</small></div><div class="top-actions"><span id="connectionStatus" class="status">Verbinde...</span><span class="user-pill">H</span></div></header>
+<section id="dashboard" class="section active">
+<div class="hero"><div><span class="eyebrow">HASTREITER DIENSTLEISTUNGEN</span><h1>Guten Tag!</h1><p>Hier findest du den aktuellen Überblick über dein Unternehmen.</p></div><img src="logo.jpeg" alt="Hastreiter" class="hero-logo"></div>
+<div class="stats">
+<article class="stat green"><span>Einnahmen</span><strong id="statIncome">0,00 €</strong><small>aktueller Monat</small></article>
+<article class="stat red"><span>Ausgaben</span><strong id="statExpense">0,00 €</strong><small>aktueller Monat</small></article>
+<article class="stat blue"><span>Offene Aufträge</span><strong id="statOrders">0</strong><small>aktuell</small></article>
+<article class="stat orange"><span>Neue Anfragen</span><strong id="statRequests">0</strong><small>noch nicht bearbeitet</small></article>
+</div>
+<div class="grid-two"><article class="panel"><div class="panel-head"><h2>Einnahmen & Ausgaben</h2></div><div class="chart-wrap"><canvas id="financeChart" width="700" height="280"></canvas></div></article>
+<article class="panel"><div class="panel-head"><h2>Nächste Termine</h2><button class="link-btn" data-section-link="kalender">Alle anzeigen</button></div><div id="nextAppointments" class="list"></div></article></div>
+<div class="quick-grid">
+<button class="quick green-bg" data-section-link="belege"><span>▣</span><b>Beleg erfassen</b><small>Foto / Datei / OCR</small></button>
+<button class="quick orange-bg" data-section-link="anfragen"><span>✉</span><b>Anfragen</b><small>Kundenanfragen bearbeiten</small></button>
+<button class="quick blue-bg" data-section-link="auftraege"><span>▤</span><b>Neuer Auftrag</b><small>Aufträge verwalten</small></button>
+<button class="quick teal-bg" data-section-link="reinigung"><span>⌁</span><b>Reinigung</b><small>Reinigungsaufträge</small></button>
+</div></section>
+<section id="anfragen" class="section"><div class="section-head"><div><h1>Anfragen</h1><p>Kundenanfragen aus dem öffentlichen Formular.</p></div></div><div class="panel"><div id="requestsList" class="table-list"></div></div></section>
+<section id="einnahmen" class="section"><div class="section-head"><div><h1>Einnahmen</h1><p>Erfasste Einnahmen und Monatsübersicht.</p></div></div><div class="panel"><div id="incomeList" class="table-list"></div></div></section>
+<section id="ausgaben" class="section"><div class="section-head"><div><h1>Ausgaben</h1><p>Erfasste Betriebsausgaben.</p></div></div><div class="panel"><div id="expenseList" class="table-list"></div></div></section>
+<section id="belege" class="section">
+<div class="section-head"><div><h1>Belege</h1><p>Belege fotografieren oder vorhandene Dateien hochladen und anschließend prüfen.</p></div></div>
+<div class="upload-card">
+<div class="upload-icon">📷</div><h2>Beleg erfassen</h2><p>Beleg direkt mit der Handykamera fotografieren oder eine vorhandene PDF/Bilddatei auswählen.</p>
+<div class="receipt-action-buttons">
+<button id="takeReceiptBtn" class="primary-btn" type="button">📷 Beleg fotografieren</button>
+<button id="uploadReceiptBtn" class="secondary-btn" type="button">📁 Datei hochladen</button>
+</div>
+<input id="receiptCameraInput" type="file" accept="image/*" capture="environment" hidden>
+<input id="receiptFile" type="file" accept="image/*,.pdf" hidden>
+<div id="receiptUploadStatus" class="upload-status"></div>
+</div>
+<div id="receiptReview" class="panel hidden">
+<div class="panel-head"><h2>Beleg prüfen</h2></div>
+<form id="receiptReviewForm">
+<label>Lieferant / Firma<input id="receiptSupplier" type="text"></label>
+<label>Datum<input id="receiptDate" type="date"></label>
+<label>Rechnungsnummer<input id="receiptInvoiceNumber" type="text"></label>
+<label>Beschreibung<input id="receiptDescription" type="text"></label>
+<label>Netto (€)<input id="receiptNet" type="number" step="0.01" min="0"></label>
+<label>MwSt. (€)<input id="receiptVat" type="number" step="0.01" min="0"></label>
+<label>Brutto (€)<input id="receiptGross" type="number" step="0.01" min="0" required></label>
+<label>Kategorie<select id="receiptCategory"><option>Betriebsausgabe</option><option>Fahrzeug</option><option>Material</option><option>Werkzeug</option><option>Büro</option><option>Sonstiges</option></select></label>
+<div id="receiptPreviewName"></div><img id="receiptImagePreview" alt="Belegvorschau" hidden>
+<div><button id="cancelReceiptBtn" class="secondary-btn" type="button">Abbrechen</button><button class="primary-btn" type="submit">Beleg speichern</button></div>
+</form></div>
+<div class="panel"><div id="receiptList" class="table-list"></div></div>
+</section>
+<section id="auftraege" class="section"><div class="section-head"><div><h1>Aufträge</h1><p>Garten-, Baum-, Winterdienst- und sonstige Aufträge.</p></div></div><div class="panel"><div id="ordersList" class="table-list"></div></div></section>
+<section id="reinigung" class="section"><div class="section-head"><div><h1>Reinigung</h1><p>Reinigungsaufträge getrennt verwalten.</p></div></div><div class="panel"><div id="cleaningList" class="table-list"></div></div></section>
+<section id="kalender" class="section"><div class="section-head"><div><h1>Kalender</h1><p>Termine und geplante Arbeiten.</p></div></div><div class="panel"><div id="calendarList" class="calendar-list"></div></div></section>
+<section id="auswertungen" class="section"><div class="section-head"><div><h1>Auswertungen</h1><p>Einnahmen, Ausgaben und Ergebnis.</p></div></div><div class="stats"><article class="stat green"><span>Gesamteinnahmen</span><strong id="totalIncome">0,00 €</strong></article><article class="stat red"><span>Gesamtausgaben</span><strong id="totalExpense">0,00 €</strong></article><article class="stat blue"><span>Ergebnis</span><strong id="totalResult">0,00 €</strong></article></div></section>
+</main></div>
+<script src="config.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="app.js?v=4"></script>
+</body></html>
