@@ -843,7 +843,10 @@ async function saveReviewedReceipt(originalReceipt){
       ...originalReceipt,
       lieferant: document.getElementById("receiptSupplier")?.value.trim() || "",
       rechnungsnummer: document.getElementById("receiptNumber")?.value.trim() || "",
-      belegdatum: getReceiptDateForSave(),
+      // Das Datum aus dem OCR-Ergebnis ist die sichere Fallback-Quelle.
+      // Damit ist das Speichern nicht davon abhängig, wie der Browser ein
+      // type=date-Feld intern behandelt.
+      belegdatum: getReceiptDateForSave() || dateInputValue(originalReceipt?.belegdatum),
       kategorie: document.getElementById("receiptCategory")?.value.trim() || "",
       netto: parseUiMoney(document.getElementById("receiptNet")?.value),
       mwst: parseUiMoney(document.getElementById("receiptVat")?.value) ?? 0,
@@ -853,7 +856,11 @@ async function saveReviewedReceipt(originalReceipt){
 
     receipt.betrag = receipt.brutto;
 
-    if(!receipt.belegdatum) throw new Error("Bitte ein Belegdatum eintragen. Bitte das Datum einmal anklicken und auswählen.");
+    if(!receipt.belegdatum){
+      // Letzter Fallback: OCR-Datum direkt übernehmen.
+      receipt.belegdatum = dateInputValue(originalReceipt?.belegdatum);
+    }
+    if(!receipt.belegdatum) throw new Error("Bitte ein Belegdatum eintragen.");
     if(receipt.brutto === null) throw new Error("Bitte einen Bruttobetrag eintragen.");
 
     const { data: saved, error } = await sb.from("belege").insert({
