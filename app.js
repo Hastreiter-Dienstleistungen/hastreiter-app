@@ -8,25 +8,22 @@ const cfg = window.HASTREITER_CONFIG || {
 let sb = null;
 let dataCache = {
   income: [], expense: [], orders: [], requests: [],
-  appointments: [], cleaning: [], receipts: []
+  appointments: [], receipts: []
 };
+
+const euro = n => new Intl.NumberFormat("de-DE", {
+  style: "currency", currency: "EUR"
+}).format(Number(n || 0));
 
 const toNumber = value => {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   let s = String(value ?? "").trim();
   if (!s) return 0;
   s = s.replace(/€/g, "").replace(/\s/g, "");
-  // Deutsche Schreibweise: 1.234,56 -> 1234.56
-  if (s.includes(",")) {
-    s = s.replace(/\./g, "").replace(",", ".");
-  }
+  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
   const n = Number(s);
   return Number.isFinite(n) ? n : 0;
 };
-
-const euro = n => new Intl.NumberFormat("de-DE", {
-  style: "currency", currency: "EUR"
-}).format(toNumber(n));
 
 const amountOf = row => {
   if (!row) return 0;
@@ -48,7 +45,7 @@ function showSection(id){
   const titles = {
     dashboard:"Dashboard", anfragen:"Anfragen", einnahmen:"Einnahmen",
     ausgaben:"Ausgaben", belege:"Belege", auftraege:"Aufträge",
-    reinigung:"Reinigung", kalender:"Kalender", auswertungen:"Auswertungen"
+    kalender:"Kalender", auswertungen:"Auswertungen"
   };
   const title = document.getElementById("pageTitle");
   if (title) title.textContent = titles[id] || "Hastreiter";
@@ -146,12 +143,11 @@ async function loadData(){
     sb.from("ausgaben").select("*").order("datum",{ascending:false}),
     sb.from("auftraege").select("*").order("startdatum",{ascending:true}),
     sb.from("anfragen").select("*").order("erstellt_am",{ascending:false}),
-    sb.from("termine").select("*").order("datum",{ascending:true}).limit(10),
-    sb.from("reinigungsauftraege").select("*").order("datum",{ascending:true}),
+    sb.from("termine").select("*").order("datum",{ascending:true}).limit(100),
     sb.from("belege").select("*").order("erstellt_am",{ascending:false})
   ]);
 
-  const [income, expense, orders, requests, appointments, cleaning, receipts] = results;
+  const [income, expense, orders, requests, appointments, receipts] = results;
 
   dataCache = {
     income: income.data || [],
@@ -159,7 +155,6 @@ async function loadData(){
     orders: orders.data || [],
     requests: requests.data || [],
     appointments: appointments.data || [],
-    cleaning: cleaning.data || [],
     receipts: receipts.data || []
   };
 
@@ -170,12 +165,6 @@ function render(){
   const currentYear = new Date().getFullYear();
   const yearText = String(currentYear);
 
-  const openOrders = dataCache.orders
-    .filter(x => !["Erledigt","Storniert"].includes(x.status)).length;
-
-  const newRequests = dataCache.requests
-    .filter(x => (x.status || "Neu") === "Neu").length;
-
   const yearIncome = dataCache.income
     .filter(x => String(x.datum || "").slice(0,4) === yearText)
     .reduce((s,x) => s + amountOf(x), 0);
@@ -183,224 +172,46 @@ function render(){
     .filter(x => String(x.datum || "").slice(0,4) === yearText)
     .reduce((s,x) => s + amountOf(x), 0);
 
+  const openOrders = dataCache.orders.filter(x => !["Erledigt","Storniert"].includes(x.status)).length;
+  const newRequests = dataCache.requests.filter(x => (x.status || "Neu") === "Neu").length;
+
   setText("statIncome", euro(yearIncome));
   setText("statExpense", euro(yearExpense));
-  setText("statResult", euro(yearIncome - yearExpense));
   setText("statOrders", openOrders);
   setText("statRequests", newRequests);
   setText("requestBadge", newRequests);
-  setText("dashboardYear", currentYear);
-  setText("dashboardYearExpense", currentYear);
-  setText("dashboardYearResult", currentYear);
 
-  const totalIncome = dataCache.income.reduce((s,x) => s + amountOf(x), 0);
-  const totalExpense = dataCache.expense.reduce((s,x) => s + amountOf(x), 0);
-
-  setText("totalIncome", euro(totalIncome));
-  setText("totalExpense", euro(totalExpense));
-  setText("totalResult", euro(totalIncome - totalExpense));
-
-  setupEvaluationControls();
-  renderEvaluation(currentYear);
   renderRequests();
+
   list("incomeList", dataCache.income, r => {
-    const id = r.id || r.rechnungsnummer || r.drive_datei_id || "";
-    return `<div class="item-card">
+    const id = r.id || "";
+    return `<div class="item-card finance-card">
       <div><b>${esc(r.datum)}</b><div>${esc(r.beschreibung || "Einnahme")}</div></div>
-      <div class="finance-row-actions">
-        <strong>${euro(amountOf(r))}</strong>
-        <button type="button" class="btn-danger income-delete" data-income-id="${esc(id)}">🗑️ Löschen</button>
-      </div>
+      <div class="finance-row-actions"><strong>${euro(amountOf(r))}</strong>${id ? `<button type="button" class="btn-danger income-delete" data-income-id="${esc(id)}">🗑️ Löschen</button>` : ""}</div>
     </div>`;
   });
-  bindIncomeDeleteActions();
 
   list("expenseList", dataCache.expense, r => {
-    const id = r.id || r.rechnungsnummer || r.drive_datei_id || "";
-    return `<div class="item-card">
-      <div><b>${esc(r.datum)}</b><div>${esc(r.lieferant || r.beschreibung || "Ausgabe")}</div></div>
-      <div class="finance-row-actions">
-        <strong>${euro(amountOf(r))}</strong>
-        <button type="button" class="btn-danger expense-delete" data-expense-id="${esc(id)}">🗑️ Löschen</button>
-      </div>
-    </div>`;
-  });
-  bindExpenseDeleteActions();
-
-  list("ordersList", dataCache.orders, r =>
-    `<div class="item-card">
-      <div><b>${esc(r.titel)}</b><div>${esc(r.leistung || "")}</div></div>
-      <span class="badge">${esc(r.status || "Offen")}</span>
-    </div>`
-  );
-
-  list("cleaningList", dataCache.cleaning, r =>
-    `<div class="item-card">
-      <div><b>${esc(r.art_der_reinigung || "Reinigung")}</b><div>${esc(r.objekt || "")}</div></div>
-      <span class="badge">${esc(r.status || "Offen")}</span>
-    </div>`
-  );
-
-  list("receiptList", dataCache.receipts, r => {
     const id = r.id || "";
-    return `<div class="item-card receipt-card">
-      <div>
-        <b>${esc(r.lieferant || "Beleg")}</b>
-        <div>${esc(r.belegdatum || "")}</div>
-        ${r.rechnungsnummer ? `<small>Nr. ${esc(r.rechnungsnummer)}</small>` : ""}
-      </div>
-      <div class="receipt-actions-list">
-        <strong>${r.betrag != null ? euro(r.betrag) : "—"}</strong>
-        <button type="button" class="btn-danger receipt-delete" data-receipt-id="${esc(id)}">🗑️ Löschen</button>
-      </div>
+    return `<div class="item-card finance-card">
+      <div><b>${esc(r.datum)}</b><div>${esc(r.lieferant || r.beschreibung || "Ausgabe")}</div></div>
+      <div class="finance-row-actions"><strong>${euro(amountOf(r))}</strong>${id ? `<button type="button" class="btn-danger expense-delete" data-expense-id="${esc(id)}">🗑️ Löschen</button>` : ""}</div>
     </div>`;
   });
-  bindReceiptDeleteActions();
 
-  list("calendarList", dataCache.appointments, r =>
-    `<div class="calendar-row">
-      <b>${esc(r.datum)} · ${esc(r.startzeit || "")}</b>
-      <div>${esc(r.titel)}</div>
+  renderOrders();
+
+  list("receiptList", dataCache.receipts, r =>
+    `<div class="item-card">
+      <div><b>${esc(r.lieferant || "Beleg")}</b><div>${esc(r.belegdatum || "")}</div></div>
+      <strong>${r.betrag != null ? euro(r.betrag) : "—"}</strong>
     </div>`
   );
 
-  list("nextAppointments", dataCache.appointments.slice(0,4), r =>
-    `<div class="list-row">
-      <div><b>${esc(r.titel)}</b><small>${esc(r.datum)} · ${esc(r.startzeit || "")}</small></div>
-      <span>›</span>
-    </div>`
-  );
-
+  renderCalendar();
   drawChart();
-}
-
-function renderEvaluation(year){
-  const yearText = String(year);
-  const income = dataCache.income.filter(x => String(x.datum || "").slice(0,4) === yearText);
-  const expense = dataCache.expense.filter(x => String(x.datum || "").slice(0,4) === yearText);
-
-  const totalIncome = income.reduce((s,x) => s + amountOf(x), 0);
-  const totalExpense = expense.reduce((s,x) => s + amountOf(x), 0);
-
-  setText("evaluationYear", yearText);
-  setText("evaluationYearExpense", yearText);
-  setText("evaluationTotalIncome", euro(totalIncome));
-  setText("evaluationTotalExpense", euro(totalExpense));
-  setText("evaluationTotalResult", euro(totalIncome - totalExpense));
-
-  const monthNames = [
-    "Januar","Februar","März","April","Mai","Juni",
-    "Juli","August","September","Oktober","November","Dezember"
-  ];
-
-  const rows = monthNames.map((name, index) => {
-    const month = `${yearText}-${String(index + 1).padStart(2,"0")}`;
-    const mi = income.filter(x => String(x.datum || "").slice(0,7) === month)
-      .reduce((s,x) => s + amountOf(x), 0);
-    const me = expense.filter(x => String(x.datum || "").slice(0,7) === month)
-      .reduce((s,x) => s + amountOf(x), 0);
-    return `<tr>
-      <td>${name}</td>
-      <td>${euro(mi)}</td>
-      <td>${euro(me)}</td>
-      <td>${euro(mi - me)}</td>
-    </tr>`;
-  }).join("");
-
-  const table = document.getElementById("evaluationMonthlyBody");
-  if(table) table.innerHTML = rows;
-}
-
-function bindIncomeDeleteActions(){
-  document.querySelectorAll(".income-delete").forEach(button => {
-    button.addEventListener("click", async () => {
-      const id = button.dataset.incomeId;
-      if(!id) return;
-      if(!confirm("Möchtest du diese Einnahme wirklich löschen? Die Originaldatei in Google Drive bleibt erhalten.")) return;
-      await deleteIncome(id);
-    });
-  });
-}
-
-async function deleteIncome(id){
-  if(!sb || !id) return;
-  try {
-    const { error } = await sb.from("einnahmen").delete().eq("id", id);
-    if(error) throw new Error("Einnahme konnte nicht gelöscht werden: " + error.message);
-    await loadData();
-  } catch(error){
-    console.error(error);
-    alert(error.message);
-  }
-}
-
-function bindExpenseDeleteActions(){
-  document.querySelectorAll(".expense-delete").forEach(button => {
-    button.addEventListener("click", async () => {
-      const id = button.dataset.expenseId;
-      if(!id) return;
-      if(!confirm("Möchtest du diese Ausgabe wirklich löschen? Der zugehörige Beleg bleibt erhalten.")) return;
-      await deleteExpense(id);
-    });
-  });
-}
-
-async function deleteExpense(id){
-  if(!sb || !id) return;
-  try {
-    const { error } = await sb.from("ausgaben").delete().eq("id", id);
-    if(error) throw new Error("Ausgabe konnte nicht gelöscht werden: " + error.message);
-    await loadData();
-  } catch(error){
-    console.error(error);
-    alert(error.message);
-  }
-}
-
-function bindReceiptDeleteActions(){
-  document.querySelectorAll(".receipt-delete").forEach(button => {
-    button.addEventListener("click", async () => {
-      const id = button.dataset.receiptId;
-      if(!id) return;
-      if(!confirm("Möchtest du diesen Beleg wirklich löschen? Die zugehörige Ausgabe wird ebenfalls aus der App gelöscht.")) return;
-      await deleteReceipt(id);
-    });
-  });
-}
-
-async function deleteReceipt(id){
-  if(!sb || !id) return;
-
-  const receipt = dataCache.receipts.find(x => String(x.id) === String(id));
-  if(!receipt){
-    alert("Beleg wurde nicht gefunden.");
-    return;
-  }
-
-  try {
-    // Die zugehörige Ausgabe wird anhand der beim Speichern gesetzten
-    // Drive-Datei-ID gefunden. Fallback: Rechnungsnummer + Datum.
-    if(receipt.drive_datei_id){
-      const { error: expenseError } = await sb.from("ausgaben")
-        .delete().eq("drive_datei_id", receipt.drive_datei_id);
-      if(expenseError) throw new Error("Zugehörige Ausgabe konnte nicht gelöscht werden: " + expenseError.message);
-    } else if(receipt.rechnungsnummer){
-      const { error: expenseError } = await sb.from("ausgaben")
-        .delete()
-        .eq("rechnungsnummer", receipt.rechnungsnummer)
-        .eq("datum", receipt.belegdatum);
-      if(expenseError) throw new Error("Zugehörige Ausgabe konnte nicht gelöscht werden: " + expenseError.message);
-    }
-
-    const { error } = await sb.from("belege").delete().eq("id", id);
-    if(error) throw new Error("Beleg konnte nicht gelöscht werden: " + error.message);
-
-    await loadData();
-    alert("Beleg wurde gelöscht.");
-  } catch(error){
-    console.error(error);
-    alert(error.message);
-  }
+  bindIncomeDeleteActions();
+  bindExpenseDeleteActions();
 }
 
 function renderRequests(){
@@ -641,57 +452,265 @@ function setText(id,value){
 function drawChart(){
   const c = document.getElementById("financeChart");
   if(!c) return;
-
   const ctx = c.getContext("2d");
   const w = c.width, h = c.height;
-
   ctx.clearRect(0,0,w,h);
   ctx.strokeStyle = "#dce5df";
   ctx.fillStyle = "#6c7770";
   ctx.font = "12px Arial";
 
   const year = new Date().getFullYear();
-  const months = [...Array(12)].map((_,i) =>
-    `${year}-${String(i+1).padStart(2,"0")}`
-  );
-
+  const months = [...Array(12)].map((_,i) => `${year}-${String(i+1).padStart(2,"0")}`);
   const vals = months.map(m => [
-    dataCache.income.filter(x => String(x.datum || "").slice(0,7) === m)
-      .reduce((s,x) => s + amountOf(x),0),
-    dataCache.expense.filter(x => String(x.datum || "").slice(0,7) === m)
-      .reduce((s,x) => s + amountOf(x),0)
+    dataCache.income.filter(x => String(x.datum || "").slice(0,7) === m).reduce((s,x)=>s+amountOf(x),0),
+    dataCache.expense.filter(x => String(x.datum || "").slice(0,7) === m).reduce((s,x)=>s+amountOf(x),0)
   ]);
-
   const max = Math.max(100,...vals.flat()) * 1.15;
-  const base = h - 35;
-  const plotH = h - 60;
-  const bw = 13;
-  const gap = (w - 80) / 12;
-
-  ctx.beginPath();
-  ctx.moveTo(35,15);
-  ctx.lineTo(35,base);
-  ctx.lineTo(w-10,base);
-  ctx.stroke();
-
-  vals.forEach((v,i) => {
-    const x = 45 + i * gap;
-    const hi = (v[0]/max) * plotH;
-    const he = (v[1]/max) * plotH;
-
-    ctx.fillStyle = "#1b9149";
-    ctx.fillRect(x,base-hi,bw,hi);
-
-    ctx.fillStyle = "#ed7412";
-    ctx.fillRect(x+bw+3,base-he,bw,he);
-
-    ctx.fillStyle = "#6c7770";
-    ctx.fillText(
-      new Date(year, i, 1).toLocaleDateString("de-DE",{month:"short"}),
-      x,
-      base+18
-    );
+  const base = h - 35, plotH = h - 60;
+  const bw = 10, gap = Math.max(54,(w-75)/12);
+  ctx.beginPath(); ctx.moveTo(35,15); ctx.lineTo(35,base); ctx.lineTo(w-10,base); ctx.stroke();
+  vals.forEach((v,i)=>{
+    const x=45+i*gap, hi=(v[0]/max)*plotH, he=(v[1]/max)*plotH;
+    ctx.fillStyle="#1b9149"; ctx.fillRect(x,base-hi,bw,hi);
+    ctx.fillStyle="#ed7412"; ctx.fillRect(x+bw+3,base-he,bw,he);
+    ctx.fillStyle="#6c7770";
+    ctx.fillText(new Date(year,i,1).toLocaleDateString("de-DE",{month:"short"}),x,base+18);
   });
+}
+
+/* ================================================================
+ * AUFTRÄGE + EIGENER KALENDER
+ * ================================================================ */
+
+const ORDER_SERVICES = ["Baumschnitt","Heckenschnitt","Rasenpflege","Gartenpflege","Baumfällung","Winterdienst","Reinigung","Entrümpelung","Sonstige Arbeiten"];
+const ORDER_FREQUENCIES = ["Einmalig","Täglich","Wöchentlich","Alle 2 Wochen","Alle 3 Wochen","Monatlich","Jährlich"];
+let calendarCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+function formatDateDE(value){
+  if(!value) return "";
+  const d = new Date(String(value).length<=10 ? `${value}T12:00:00` : value);
+  return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString("de-DE");
+}
+function isoDate(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function startOfDay(value){
+  const d=new Date(`${value}T12:00:00`); return d;
+}
+function sameOrBefore(a,b){ return a.getTime() <= b.getTime(); }
+function addMonthsSafe(date, months){
+  const d=new Date(date.getTime());
+  const day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+months);
+  const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate(); d.setDate(Math.min(day,last)); return d;
+}
+
+function orderLabel(r){
+  const customer = r.kundenname || r.kunde || r.name || "Kunde";
+  return `${customer} · ${r.leistung || r.titel || "Auftrag"}`;
+}
+
+function recurrenceText(r){
+  return r.frequenz || r.haeufigkeit || "Einmalig";
+}
+
+function orderOccurrences(order, rangeStart, rangeEnd){
+  if(!order?.startdatum) return [];
+  const start=startOfDay(String(order.startdatum).slice(0,10));
+  let end=order.enddatum ? startOfDay(String(order.enddatum).slice(0,10)) : null;
+  if(!end && recurrenceText(order)!=="Einmalig") end=addMonthsSafe(start,12);
+  if(!end) end=new Date(start.getTime());
+  if(end.getTime()<rangeStart.getTime() || start.getTime()>rangeEnd.getTime()) return [];
+
+  const freq=recurrenceText(order), out=[];
+  const push=(d)=>{ if(d>=rangeStart && d<=rangeEnd) out.push({order,date:new Date(d)}); };
+  if(freq==="Einmalig"){ push(start); return out; }
+  if(freq==="Täglich"){
+    let d=new Date(Math.max(start.getTime(),rangeStart.getTime()));
+    while(d<=rangeEnd && d<=end){ push(d); d.setDate(d.getDate()+1); }
+    return out;
+  }
+  if(freq==="Wöchentlich" || freq==="Alle 2 Wochen" || freq==="Alle 3 Wochen"){
+    const step=freq==="Wöchentlich"?7:freq==="Alle 2 Wochen"?14:21;
+    let d=new Date(start);
+    while(d<rangeStart) d.setDate(d.getDate()+step);
+    while(d<=rangeEnd && d<=end){ push(d); d.setDate(d.getDate()+step); }
+    return out;
+  }
+  if(freq==="Monatlich"){
+    let d=new Date(start); while(d<rangeStart) d=addMonthsSafe(d,1);
+    while(d<=rangeEnd && d<=end){ push(d); d=addMonthsSafe(d,1); }
+    return out;
+  }
+  if(freq==="Jährlich"){
+    let d=new Date(start); while(d<rangeStart) d=addMonthsSafe(d,12);
+    while(d<=rangeEnd && d<=end){ push(d); d=addMonthsSafe(d,12); }
+    return out;
+  }
+  return out;
+}
+
+function getCalendarEvents(){
+  const first=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth(),1);
+  const last=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,0,23,59,59);
+  const rangeStart=new Date(first); rangeStart.setDate(first.getDate()-7);
+  const rangeEnd=new Date(last); rangeEnd.setDate(last.getDate()+7);
+  const events=[];
+  dataCache.orders.forEach(o=>events.push(...orderOccurrences(o,rangeStart,rangeEnd)));
+  dataCache.appointments.forEach(a=>{
+    if(!a.datum) return;
+    const d=startOfDay(String(a.datum).slice(0,10));
+    if(d>=rangeStart && d<=rangeEnd) events.push({manual:a,date:d});
+  });
+  return events;
+}
+
+function renderOrders(){
+  const el=document.getElementById("ordersList"); if(!el) return;
+  if(!dataCache.orders.length){ el.innerHTML='<div class="empty">Noch keine Aufträge vorhanden.</div>'; return; }
+  el.innerHTML=dataCache.orders.map(r=>{
+    const id=r.id||"";
+    const customer=r.kundenname||r.kunde||r.name||"Kunde";
+    const address=[r.strasse,r.plz,r.ort].filter(Boolean).join(", ");
+    return `<div class="item-card order-card">
+      <div class="order-main"><div><b>${esc(r.auftragsnummer||r.id||"Auftrag")}</b><div class="order-title">${esc(customer)} · ${esc(r.leistung||r.titel||"Auftrag")}</div><small>${esc(address)}${address&&r.telefon?" · ":""}${esc(r.telefon||"")}</small></div><div class="order-meta"><span class="badge">${esc(r.status||"Offen")}</span><span class="badge">${esc(recurrenceText(r))}</span></div></div>
+      <div class="order-bottom"><span>${esc(formatDateDE(r.startdatum))}${r.uhrzeit?` · ${esc(String(r.uhrzeit).slice(0,5))}`:""}${r.preis!=null?` · ${euro(r.preis)}`:""}</span><div class="finance-row-actions"><button type="button" class="btn-secondary order-edit" data-order-id="${esc(id)}">✏️ Bearbeiten</button><button type="button" class="btn-danger order-delete" data-order-id="${esc(id)}">🗑️ Löschen</button></div></div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll(".order-edit").forEach(b=>b.addEventListener("click",()=>openOrderModal(b.dataset.orderId)));
+  document.querySelectorAll(".order-delete").forEach(b=>b.addEventListener("click",()=>deleteOrder(b.dataset.orderId)));
+}
+
+function defaultOrderNumber(){
+  const year=new Date().getFullYear();
+  const max=dataCache.orders.map(o=>String(o.auftragsnummer||"").match(/(\d+)$/)?.[1]).filter(Boolean).map(Number).reduce((a,b)=>Math.max(a,b),0);
+  return `AUF-${year}-${String(max+1).padStart(4,"0")}`;
+}
+
+function setOrderField(id,value){ const el=document.getElementById(id); if(el) el.value=value??""; }
+function getOrderField(id){ return document.getElementById(id)?.value.trim() || ""; }
+function showOrderModalError(msg){ const e=document.getElementById("orderFormError"); if(e) e.textContent=msg||""; }
+function closeOrderModal(){ document.getElementById("orderModal")?.classList.add("hidden"); showOrderModalError(""); }
+
+function openOrderModal(id=""){
+  const modal=document.getElementById("orderModal"); if(!modal) return;
+  const r=id ? dataCache.orders.find(x=>String(x.id)===String(id)) : null;
+  setOrderField("orderId",r?.id||"");
+  setOrderField("orderNumber",r?.auftragsnummer||defaultOrderNumber());
+  setOrderField("orderCustomer",r?.kundenname||r?.kunde||r?.name||"");
+  setOrderField("orderCompany",r?.firma||"");
+  setOrderField("orderContact",r?.ansprechpartner||"");
+  setOrderField("orderPhone",r?.telefon||"");
+  setOrderField("orderEmail",r?.email||"");
+  setOrderField("orderStreet",r?.strasse||"");
+  setOrderField("orderZip",r?.plz||"");
+  setOrderField("orderCity",r?.ort||"");
+  setOrderField("orderService",r?.leistung||"");
+  setOrderField("orderPrice",r?.preis??"");
+  setOrderField("orderStatus",r?.status||"Offen");
+  setOrderField("orderFrequency",recurrenceText(r||{}));
+  setOrderField("orderStartDate",String(r?.startdatum||"").slice(0,10)||isoDate(new Date()));
+  setOrderField("orderEndDate",String(r?.enddatum||"").slice(0,10));
+  setOrderField("orderTime",String(r?.uhrzeit||"08:00").slice(0,5));
+  setOrderField("orderDuration",r?.dauer_minuten||60);
+  setOrderField("orderDescription",r?.beschreibung||"");
+  setOrderField("orderNotes",r?.notizen||"");
+  setText("orderModalTitle",r?"Auftrag bearbeiten":"Neuer Auftrag");
+  document.getElementById("orderDeleteBtn")?.classList.toggle("hidden",!r);
+  modal.classList.remove("hidden");
+}
+
+async function saveOrder(e){
+  e.preventDefault(); if(!sb) return;
+  showOrderModalError("");
+  const id=getOrderField("orderId");
+  const customer=getOrderField("orderCustomer");
+  const start=getOrderField("orderStartDate");
+  const end=getOrderField("orderEndDate");
+  if(!customer || !start || !getOrderField("orderService")){ showOrderModalError("Bitte Kunde, Leistung und Startdatum ausfüllen."); return; }
+  if(end && end<start){ showOrderModalError("Das Enddatum darf nicht vor dem Startdatum liegen."); return; }
+  const payload={
+    auftragsnummer:getOrderField("orderNumber")||defaultOrderNumber(),
+    titel:getOrderField("orderService"),
+    leistung:getOrderField("orderService"),
+    kundenname:customer, kunde:customer, firma:getOrderField("orderCompany"),
+    ansprechpartner:getOrderField("orderContact"), telefon:getOrderField("orderPhone"), email:getOrderField("orderEmail"),
+    strasse:getOrderField("orderStreet"), plz:getOrderField("orderZip"), ort:getOrderField("orderCity"),
+    preis:toNumber(getOrderField("orderPrice")), status:getOrderField("orderStatus")||"Offen",
+    frequenz:getOrderField("orderFrequency")||"Einmalig", startdatum:start, enddatum:end||null,
+    uhrzeit:getOrderField("orderTime")||null, dauer_minuten:Number(getOrderField("orderDuration")||60),
+    beschreibung:getOrderField("orderDescription"), notizen:getOrderField("orderNotes"),
+    aktualisiert_am:new Date().toISOString()
+  };
+  let result;
+  if(id) result=await sb.from("auftraege").update(payload).eq("id",id).select().single();
+  else { payload.erstellt_am=new Date().toISOString(); result=await sb.from("auftraege").insert(payload).select().single(); }
+  if(result.error){ showOrderModalError("Auftrag konnte nicht gespeichert werden: "+result.error.message); return; }
+  closeOrderModal(); await loadData();
+}
+
+async function deleteOrder(id){
+  if(!id || !sb) return;
+  if(!confirm("Möchtest du diesen Auftrag wirklich löschen? Die zugehörigen Termine werden damit ebenfalls nicht mehr im Auftragskalender angezeigt.")) return;
+  const {error}=await sb.from("auftraege").delete().eq("id",id);
+  if(error){ alert("Auftrag konnte nicht gelöscht werden: "+error.message); return; }
+  closeOrderModal(); await loadData();
+}
+
+function bindOrderForm(){
+  document.getElementById("newOrderBtn")?.addEventListener("click",()=>openOrderModal());
+  document.getElementById("calendarNewOrderBtn")?.addEventListener("click",()=>openOrderModal());
+  document.getElementById("orderModalClose")?.addEventListener("click",closeOrderModal);
+  document.getElementById("orderCancelBtn")?.addEventListener("click",closeOrderModal);
+  document.getElementById("orderForm")?.addEventListener("submit",saveOrder);
+  document.getElementById("orderDeleteBtn")?.addEventListener("click",()=>deleteOrder(getOrderField("orderId")));
+  document.getElementById("orderModal")?.addEventListener("click",e=>{ if(e.target.id==="orderModal") closeOrderModal(); });
+  document.getElementById("calendarPrev")?.addEventListener("click",()=>{calendarCursor.setMonth(calendarCursor.getMonth()-1);renderCalendar();});
+  document.getElementById("calendarNext")?.addEventListener("click",()=>{calendarCursor.setMonth(calendarCursor.getMonth()+1);renderCalendar();});
+  document.getElementById("calendarToday")?.addEventListener("click",()=>{calendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderCalendar();});
+}
+
+function renderCalendar(){
+  const grid=document.getElementById("calendarGrid"); if(!grid) return;
+  setText("calendarMonthTitle",calendarCursor.toLocaleDateString("de-DE",{month:"long",year:"numeric"}));
+  const first=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth(),1);
+  const last=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,0);
+  const mondayIndex=(first.getDay()+6)%7;
+  const days=[];
+  for(let i=0;i<mondayIndex;i++) days.push(null);
+  for(let d=1;d<=last.getDate();d++) days.push(new Date(calendarCursor.getFullYear(),calendarCursor.getMonth(),d));
+  while(days.length%7) days.push(null);
+  const events=getCalendarEvents();
+  grid.innerHTML=days.map(d=>{
+    if(!d) return `<div class="calendar-day empty-day"></div>`;
+    const ds=isoDate(d), dayEvents=events.filter(e=>isoDate(e.date)===ds);
+    return `<div class="calendar-day"><div class="calendar-day-number">${d.getDate()}</div>${dayEvents.map(e=>{
+      const o=e.order||null, a=e.manual||null;
+      const title=o?orderLabel(o):(a?.titel||"Termin");
+      const time=o?(o.uhrzeit?String(o.uhrzeit).slice(0,5):""):(a?.startzeit||"");
+      const id=o?.id||"";
+      return `<button type="button" class="calendar-event ${o?'order-event':'manual-event'}" data-order-id="${esc(id)}"><b>${esc(time)}</b> ${esc(title)}</button>`;
+    }).join("")}</div>`;
+  }).join("");
+  grid.querySelectorAll(".calendar-event.order-event").forEach(b=>b.addEventListener("click",()=>openOrderModal(b.dataset.orderId)));
+}
+
+function bindIncomeDeleteActions(){
+  document.querySelectorAll(".income-delete").forEach(button=>button.addEventListener("click",async()=>{
+    const id=button.dataset.incomeId;
+    if(!confirm("Möchtest du diese Einnahme wirklich löschen?")) return;
+    const {error}=await sb.from("einnahmen").delete().eq("id",id);
+    if(error){alert("Einnahme konnte nicht gelöscht werden: "+error.message);return;}
+    await loadData();
+  }));
+}
+function bindExpenseDeleteActions(){
+  document.querySelectorAll(".expense-delete").forEach(button=>button.addEventListener("click",async()=>{
+    const id=button.dataset.expenseId;
+    if(!confirm("Möchtest du diese Ausgabe wirklich löschen? Der Beleg bleibt erhalten.")) return;
+    const {error}=await sb.from("ausgaben").delete().eq("id",id);
+    if(error){alert("Ausgabe konnte nicht gelöscht werden: "+error.message);return;}
+    await loadData();
+  }));
 }
 
 /* ================================================================
@@ -1124,24 +1143,6 @@ async function saveReviewedReceipt(originalReceipt){
   }
 }
 
-function setupEvaluationControls(){
-  const select = document.getElementById("evaluationYearSelect");
-  if(!select) return;
-
-  const years = new Set([new Date().getFullYear()]);
-  [...dataCache.income, ...dataCache.expense].forEach(row => {
-    const year = String(row.datum || "").slice(0,4);
-    if(/^\d{4}$/.test(year)) years.add(Number(year));
-  });
-
-  const current = Number(select.value) || new Date().getFullYear();
-  select.innerHTML = [...years].sort((a,b) => b-a)
-    .map(year => `<option value="${year}">${year}</option>`).join("");
-  select.value = years.has(current) ? String(current) : String(Math.max(...years));
-
-  select.onchange = () => renderEvaluation(Number(select.value));
-}
-
+bindOrderForm();
 setupReceiptScanner();
-setupEvaluationControls();
 init();

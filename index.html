@@ -266,8 +266,6 @@
       background:#fff;
     }
     .item-card strong{white-space:nowrap}
-    .finance-row-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
-    .finance-row-actions .btn-danger,.receipt-actions-list .btn-danger{cursor:pointer;white-space:nowrap}
     .item-card small{color:var(--muted)}
     .badge{
       background:#edf4ef;
@@ -327,10 +325,36 @@
       background:#fff;border:1px solid var(--border);border-radius:18px;padding:22px
     }
     .summary-card .big{font-size:28px;font-weight:900;margin-top:7px}
-    .receipt-actions-list{display:flex;align-items:center;gap:12px}
-    .receipt-delete{padding:7px 10px;font-size:12px}
-    .evaluation-controls{display:flex;align-items:center;gap:12px;margin-bottom:20px}
-    .evaluation-controls select{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:15px}
+
+
+    .order-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
+    .finance-card{align-items:center}
+    .finance-row-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .order-card{display:block}
+    .order-main{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+    .order-title{font-size:17px;font-weight:800;margin:5px 0}
+    .order-meta{display:flex;gap:7px;flex-wrap:wrap}
+    .order-bottom{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);color:var(--muted)}
+    .btn-primary,.btn-secondary,.btn-danger{border:0;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+    .btn-primary{background:#1b9149;color:#fff}
+    .btn-secondary{background:#eef2ef;color:#24332a}
+    .btn-danger{background:#ffe9e9;color:#b42318}
+    .btn-primary:disabled,.btn-secondary:disabled,.btn-danger:disabled{opacity:.6;cursor:not-allowed}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
+    .modal-overlay.hidden{display:none}
+    .order-modal-card{background:#fff;border-radius:20px;max-width:980px;width:100%;padding:24px;box-shadow:0 25px 70px rgba(0,0,0,.3);max-height:92vh;overflow:auto}
+    .modal-header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:20px}
+    .modal-header-row h2{margin:0}.modal-header-row p{margin:5px 0 0;color:var(--muted)}
+    .order-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .order-field label{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:14px}
+    .order-field input,.order-field select,.order-field textarea{font:inherit;border:1px solid var(--border);border-radius:10px;padding:11px;background:#fff;font-weight:400}
+    .order-field.full{grid-column:1/-1}
+    .muted-small{font-weight:400;color:var(--muted)}
+    .modal-actions{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:20px}
+    .modal-actions-right{display:flex;gap:10px}
+    .calendar-toolbar{display:flex;align-items:center;justify-content:center;gap:12px}.calendar-toolbar h2{min-width:230px;text-align:center;margin:0;text-transform:capitalize}
+    .calendar-panel{overflow:hidden}.calendar-weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}.calendar-weekdays>div{padding:10px;text-align:center;color:var(--muted);font-weight:800;border-bottom:1px solid var(--border)}
+    .calendar-day{min-height:125px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:7px;background:#fff}.calendar-day:nth-child(7n){border-right:0}.empty-day{background:#f7f9f7}.calendar-day-number{font-weight:900;margin-bottom:7px}.calendar-event{display:block;width:100%;text-align:left;border:0;border-radius:8px;padding:6px 7px;margin:4px 0;background:#e8f7ed;color:#17683b;cursor:pointer;font-size:12px}.manual-event{background:#eef2f8;color:#2d4f78}
 
     .mobile-only{display:none}
 
@@ -363,9 +387,15 @@
       .hero-logo{display:none}
       .hero h1{font-size:30px}
       .summary-grid{grid-template-columns:1fr}
+      .order-section-head{align-items:stretch;flex-direction:column}
+      .order-form-grid{grid-template-columns:1fr}
+      .order-field.full{grid-column:auto}
+      .order-main,.order-bottom{flex-direction:column;align-items:stretch}
+      .calendar-day{min-height:105px;padding:5px}.calendar-event{font-size:11px;padding:5px}
       .request-main{align-items:flex-start;flex-direction:column}
       .request-status{width:100%}
       .upload-card{padding:20px}
+      .calendar-toolbar h2{min-width:160px;font-size:18px}
     }
 
     @media(max-width:520px){
@@ -459,10 +489,6 @@
             <span class="nav-icon">▤</span>Aufträge
           </button>
 
-          <button class="nav-item" data-section="reinigung">
-            <span class="nav-icon">⌁</span>Reinigung
-          </button>
-
           <button class="nav-item" data-section="kalender">
             <span class="nav-icon">□</span>Kalender
           </button>
@@ -509,21 +535,15 @@
 
             <div class="stats">
               <div class="stat-card">
-                <div class="stat-label">Einnahmen <span id="dashboardYear"></span></div>
+                <div class="stat-label">Einnahmen</div>
                 <div id="statIncome" class="stat-value">0,00 €</div>
                 <div class="stat-foot">gesamtes Jahr</div>
               </div>
 
               <div class="stat-card expense">
-                <div class="stat-label">Ausgaben <span id="dashboardYearExpense"></span></div>
+                <div class="stat-label">Ausgaben</div>
                 <div id="statExpense" class="stat-value">0,00 €</div>
                 <div class="stat-foot">gesamtes Jahr</div>
-              </div>
-
-              <div class="stat-card">
-                <div class="stat-label">Jahresergebnis <span id="dashboardYearResult"></span></div>
-                <div id="statResult" class="stat-value">0,00 €</div>
-                <div class="stat-foot">Einnahmen minus Ausgaben</div>
               </div>
 
               <div class="stat-card orders">
@@ -538,6 +558,7 @@
                 <div class="stat-foot">noch nicht bearbeitet</div>
               </div>
             </div>
+
             <div class="dashboard-grid">
               <div class="panel chart-panel">
                 <div class="panel-head">
@@ -556,7 +577,6 @@
                 </div>
               </div>
             </div>
-
           </section>
 
           <!-- ANFRAGEN -->
@@ -637,12 +657,14 @@
               </div>
             </div>
           </section>
-
           <!-- AUFTRÄGE -->
           <section id="auftraege" class="section">
-            <div class="section-head">
-              <h1>Aufträge</h1>
-              <p>Aktuelle Aufträge und deren Status.</p>
+            <div class="section-head order-section-head">
+              <div>
+                <h1>Aufträge</h1>
+                <p>Aufträge selbst anlegen, bearbeiten, löschen und als Termine planen.</p>
+              </div>
+              <button id="newOrderBtn" type="button" class="btn-primary">＋ Neuer Auftrag</button>
             </div>
             <div class="panel">
               <div id="ordersList" class="item-list">
@@ -650,30 +672,26 @@
               </div>
             </div>
           </section>
-
-          <!-- REINIGUNG -->
-          <section id="reinigung" class="section">
-            <div class="section-head">
-              <h1>Reinigung</h1>
-              <p>Erfasste Reinigungsaufträge.</p>
-            </div>
-            <div class="panel">
-              <div id="cleaningList" class="item-list">
-                <div class="empty">Noch keine Reinigungsaufträge vorhanden.</div>
-              </div>
-            </div>
-          </section>
-
           <!-- KALENDER -->
           <section id="kalender" class="section">
-            <div class="section-head">
-              <h1>Kalender</h1>
-              <p>Termine und geplante Arbeiten.</p>
-            </div>
-            <div class="panel">
-              <div id="calendarList">
-                <div class="empty">Noch keine Termine vorhanden.</div>
+            <div class="section-head order-section-head">
+              <div>
+                <h1>Kalender</h1>
+                <p>Alle Aufträge und wiederkehrenden Termine auf einen Blick.</p>
               </div>
+              <button id="calendarNewOrderBtn" type="button" class="btn-primary">＋ Neuer Auftrag</button>
+            </div>
+            <div class="calendar-toolbar panel">
+              <button id="calendarPrev" type="button" class="btn-secondary">‹</button>
+              <button id="calendarToday" type="button" class="btn-secondary">Heute</button>
+              <h2 id="calendarMonthTitle">—</h2>
+              <button id="calendarNext" type="button" class="btn-secondary">›</button>
+            </div>
+            <div class="panel calendar-panel">
+              <div class="calendar-weekdays">
+                <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+              </div>
+              <div id="calendarGrid" class="calendar-grid"></div>
             </div>
           </section>
 
@@ -681,44 +699,24 @@
           <section id="auswertungen" class="section">
             <div class="section-head">
               <h1>Auswertungen</h1>
-              <p>Jahresübersicht und monatliche Berechnung von Einnahmen, Ausgaben und Ergebnis.</p>
-            </div>
-
-            <div class="evaluation-controls">
-              <label for="evaluationYearSelect"><b>Jahr:</b></label>
-              <select id="evaluationYearSelect">
-                <option value="2026">2026</option>
-              </select>
+              <p>Überblick über Einnahmen und Ausgaben.</p>
             </div>
 
             <div class="summary-grid">
               <div class="summary-card">
-                <div class="stat-label">Einnahmen <span id="evaluationYear">2026</span></div>
+                <div class="stat-label">Gesamteinnahmen</div>
                 <div id="evaluationTotalIncome" class="big">0,00 €</div>
               </div>
               <div class="summary-card">
-                <div class="stat-label">Ausgaben <span id="evaluationYearExpense">2026</span></div>
+                <div class="stat-label">Gesamtausgaben</div>
                 <div id="evaluationTotalExpense" class="big">0,00 €</div>
               </div>
               <div class="summary-card">
-                <div class="stat-label">Jahresergebnis</div>
+                <div class="stat-label">Ergebnis</div>
                 <div id="evaluationTotalResult" class="big">0,00 €</div>
               </div>
             </div>
 
-            <div class="panel">
-              <div class="panel-head">
-                <h2>Monatliche Berechnung</h2>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>Monat</th><th>Einnahmen</th><th>Ausgaben</th><th>Ergebnis</th></tr>
-                  </thead>
-                  <tbody id="evaluationMonthlyBody"></tbody>
-                </table>
-              </div>
-            </div>
           </section>
 
         </div>
@@ -730,7 +728,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- WICHTIG: Cache-Version bei jeder neuen app.js-Version ändern -->
-  <script src="app.js?v=20260930-2"></script>
+  <script src="app.js?v=20260930-3"></script>
 
   <script>
     /*
@@ -752,5 +750,48 @@
     }
   </script>
 
+
+  <div id="orderModal" class="modal-overlay hidden">
+    <div class="order-modal-card">
+      <div class="modal-header-row">
+        <div><h2 id="orderModalTitle">Neuer Auftrag</h2><p>Alle Kundendaten und die komplette Auftragsplanung.</p></div>
+        <button type="button" id="orderModalClose" class="btn-secondary">✕</button>
+      </div>
+      <form id="orderForm">
+        <input id="orderId" type="hidden">
+        <div class="order-form-grid">
+          <div class="order-field full"><label>Auftragsnummer<input id="orderNumber" readonly placeholder="wird automatisch vergeben"></label></div>
+          <div class="order-field"><label>Kunde / Name<input id="orderCustomer" required></label></div>
+          <div class="order-field"><label>Firma<input id="orderCompany"></label></div>
+          <div class="order-field"><label>Ansprechpartner<input id="orderContact"></label></div>
+          <div class="order-field"><label>Telefon<input id="orderPhone" type="tel"></label></div>
+          <div class="order-field"><label>E-Mail<input id="orderEmail" type="email"></label></div>
+          <div class="order-field"><label>Straße / Hausnummer<input id="orderStreet"></label></div>
+          <div class="order-field"><label>PLZ<input id="orderZip"></label></div>
+          <div class="order-field"><label>Ort<input id="orderCity"></label></div>
+          <div class="order-field"><label>Leistung<select id="orderService" required>
+            <option value="">Bitte auswählen</option>
+            <option>Baumschnitt</option><option>Heckenschnitt</option><option>Rasenpflege</option>
+            <option>Gartenpflege</option><option>Baumfällung</option><option>Winterdienst</option>
+            <option>Reinigung</option><option>Entrümpelung</option><option>Sonstige Arbeiten</option>
+          </select></label></div>
+          <div class="order-field"><label>Preis (€)<input id="orderPrice" type="number" min="0" step="0.01"></label></div>
+          <div class="order-field"><label>Status<select id="orderStatus"><option>Offen</option><option>Geplant</option><option>In Bearbeitung</option><option>Erledigt</option><option>Storniert</option></select></label></div>
+          <div class="order-field"><label>Häufigkeit<select id="orderFrequency"><option>Einmalig</option><option>Täglich</option><option>Wöchentlich</option><option>Alle 2 Wochen</option><option>Alle 3 Wochen</option><option>Monatlich</option><option>Jährlich</option></select></label></div>
+          <div class="order-field"><label>Startdatum<input id="orderStartDate" type="date" required></label></div>
+          <div class="order-field"><label>Enddatum <span class="muted-small">(optional)</span><input id="orderEndDate" type="date"></label></div>
+          <div class="order-field"><label>Uhrzeit<input id="orderTime" type="time" value="08:00"></label></div>
+          <div class="order-field"><label>Dauer (Minuten)<input id="orderDuration" type="number" min="15" step="15" value="60"></label></div>
+          <div class="order-field full"><label>Beschreibung<textarea id="orderDescription" rows="3"></textarea></label></div>
+          <div class="order-field full"><label>Notizen<textarea id="orderNotes" rows="3"></textarea></label></div>
+        </div>
+        <div id="orderFormError" class="error"></div>
+        <div class="modal-actions">
+          <button type="button" id="orderDeleteBtn" class="btn-danger hidden">🗑️ Auftrag löschen</button>
+          <div class="modal-actions-right"><button type="button" id="orderCancelBtn" class="btn-secondary">Abbrechen</button><button type="submit" class="btn-primary">💾 Auftrag speichern</button></div>
+        </div>
+      </form>
+    </div>
+  </div>
 </body>
 </html>
