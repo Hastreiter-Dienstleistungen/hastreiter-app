@@ -1,0 +1,21 @@
+HASTREITER APP – PWA
+======================
+
+Die App wurde für Android und iPhone als installierbare PWA vorbereitet.
+
+ANDROID:
+1. Die App über Chrome öffnen.
+2. Menü (⋮) öffnen.
+3. „App installieren“ bzw. „Zum Startbildschirm hinzufügen“ auswählen.
+
+IPHONE:
+1. Die App in Safari öffnen.
+2. Teilen-Symbol drücken.
+3. „Zum Home-Bildschirm“ auswählen.
+4. „Hinzufügen“ bestätigen.
+
+WICHTIG:
+- Die bestehende Supabase-/Google-Apps-Script-Anbindung wurde nicht verändert.
+- Das vorhandene logo.jpeg bleibt das Original-Logo.
+- Die App muss über HTTPS (z. B. GitHub Pages) geöffnet werden.
+- Nach dem ersten Aufruf kann der Browser die PWA-Dateien zwischenspeichern.
