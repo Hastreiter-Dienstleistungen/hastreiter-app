@@ -4,13 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#004d2b">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Hastreiter">
-  <link rel="manifest" href="./manifest.json?v=3">
-  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=3">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=3">
   <meta name="description" content="Hastreiter Dienstleistungen – internes Verwaltungsprogramm">
   <title>Hastreiter Dienstleistungen</title>
 
@@ -413,6 +406,13 @@
       .stat-value{font-size:27px}
     }
   </style>
+
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Hastreiter">
 </head>
 
 <body>
@@ -804,11 +804,10 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./service-worker.js?v=3', { scope: './' })
+      navigator.serviceWorker.register('./service-worker.js', { scope: './' })
         .catch(err => console.warn('PWA Service Worker konnte nicht registriert werden:', err));
     });
   }
 </script>
-
 </body>
 </html>
