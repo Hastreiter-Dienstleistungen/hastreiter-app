@@ -1,4 +1,3 @@
-/* HASTREITER APP – KOMPLETTVERSION – 2026-09-29 – Belegscanner/ausgaben Fix */
 const cfg = window.HASTREITER_CONFIG || {
   supabaseUrl: "https://wjxppqxudiomfgfbeyav.supabase.co",
   supabaseAnonKey: "sb_publishable_vSd_ftJq3_fNylpQ6pbVSQ_r7XChVQP",
@@ -626,7 +625,14 @@ async function processReceiptFile(file){
       })
     });
 
-    const result = await response.json();
+    const raw = await response.text();
+    let result;
+    try {
+      result = JSON.parse(raw);
+    } catch (_) {
+      const preview = String(raw || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 240);
+      throw new Error("Google Apps Script liefert keine JSON-Antwort. Bitte die Web-App-Bereitstellung prüfen. Antwort: " + (preview || "leer"));
+    }
     if(!result.success) throw new Error(result.error || "Beleg konnte nicht verarbeitet werden.");
 
     setReceiptStatus(result.message || "Beleg erkannt.");
@@ -825,17 +831,7 @@ function moneyInputValue(value){
 }
 
 function parseUiMoney(value){
-  let s = String(value ?? "").trim();
-  if(!s) return null;
-
-  // Deutsche Schreibweise: 1.234,56
-  if(s.includes(",")){
-    s = s.replace(/\./g, "").replace(",", ".");
-  } else {
-    // Englische/HTML-Schreibweise: 1234.56
-    s = s.replace(/[^0-9.-]/g, "");
-  }
-
+  const s = String(value || "").trim().replace(/\./g,"").replace(",",".");
   const n = Number(s);
   return Number.isFinite(n) ? Number(n.toFixed(2)) : null;
 }
@@ -948,7 +944,13 @@ async function saveReviewedReceipt(originalReceipt){
       })
     });
 
-    const sheetResult = await sheetResponse.json();
+    const sheetRaw = await sheetResponse.text();
+    let sheetResult;
+    try {
+      sheetResult = JSON.parse(sheetRaw);
+    } catch (_) {
+      throw new Error("Google Sheets liefert keine JSON-Antwort beim Belegspeichern.");
+    }
     if(!sheetResult.success){
       throw new Error("Beleg und Ausgabe gespeichert, aber Google Sheets meldet einen Fehler: " + (sheetResult.error || "unbekannter Fehler"));
     }
