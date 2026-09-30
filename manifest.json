@@ -1,26 +1,60 @@
 {
+  "id": "/hastreiter-app/",
   "name": "Hastreiter Dienstleistungen",
   "short_name": "Hastreiter",
-  "description": "Hastreiter Dienstleistungen – internes Verwaltungsprogramm",
-  "start_url": "./index.html",
-  "scope": "./",
+  "description": "Hastreiter Dienstleistungen – Verwaltung und Auftragsverwaltung",
+  "lang": "de-DE",
+  "dir": "ltr",
+  "start_url": "/hastreiter-app/",
+  "scope": "/hastreiter-app/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait-primary",
   "background_color": "#f3f7f4",
   "theme_color": "#004d2b",
-  "lang": "de-DE",
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "./icons/icon-192.png",
+      "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "./icons/icon-512.png",
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

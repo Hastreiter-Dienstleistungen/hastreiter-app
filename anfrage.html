@@ -2,12 +2,6 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="theme-color" content="#004d2b">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Hastreiter">
-  <link rel="manifest" href="./manifest.json">
-  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Anfrage stellen | Hastreiter Dienstleistungen</title>
   <meta name="description" content="Unverbindliche Anfrage für Baumschnitt, Heckenschnitt, Rasenpflege, Gartenpflege, Baumfällung, Winterdienst, Reinigung und Entrümpelung bei Hastreiter Dienstleistungen.">
@@ -111,10 +105,5 @@
   </main>
 
   <script src="anfrage.js"></script>
-<script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
-    }
-  </script>
 </body>
 </html>

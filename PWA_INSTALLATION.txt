@@ -1,0 +1,20 @@
+HASTREITER DIENSTLEISTUNGEN – PWA
+
+Diese Version ist für die Installation auf Android und iPhone vorbereitet.
+
+GITHUB:
+1. Alle Dateien dieses ZIP-Inhalts in das Repository Hastreiter-Dienstleistungen/hastreiter-app hochladen.
+2. Vorhandene Dateien ersetzen.
+3. Die vorhandene logo.jpeg NICHT löschen.
+4. Warten, bis GitHub Pages die neue Version veröffentlicht hat.
+
+WICHTIG:
+- manifest.json muss im Repository-Hauptordner liegen.
+- service-worker.js muss im Repository-Hauptordner liegen.
+- der Ordner icons muss mit hochgeladen werden.
+
+ANDROID:
+Chrome öffnen -> https://hastreiter-dienstleistungen.github.io/hastreiter-app/ -> Seite vollständig laden -> Menü (3 Punkte) -> Installieren.
+
+IPHONE:
+Safari öffnen -> https://hastreiter-dienstleistungen.github.io/hastreiter-app/ -> Teilen -> Zum Home-Bildschirm.
