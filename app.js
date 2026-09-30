@@ -624,7 +624,11 @@ function openOrderModal(id=""){
 
 async function saveOrder(e){
   e.preventDefault();
-  if(!sb) return;
+  e.stopPropagation();
+  if(!sb){
+    showOrderModalError("Keine Verbindung zu Supabase.");
+    return false;
+  }
   showOrderModalError("");
 
   const id=getOrderField("orderId");
@@ -635,11 +639,11 @@ async function saveOrder(e){
 
   if(!customer || !start || !service){
     showOrderModalError("Bitte Kunde, Leistung und Startdatum ausfüllen.");
-    return;
+    return false;
   }
   if(end && end<start){
     showOrderModalError("Das Enddatum darf nicht vor dem Startdatum liegen.");
-    return;
+    return false;
   }
 
   const duration = Number(getOrderField("orderDuration") || 60);
@@ -675,31 +679,42 @@ async function saveOrder(e){
   try {
     let result;
     if(id){
-      result=await sb.from("auftraege").update(payload).eq("id",id);
+      // select() liefert direkt die tatsächlich aktualisierte Zeile zurück.
+      result=await sb.from("auftraege").update(payload).eq("id",id).select("*").single();
     }else{
       payload.erstellt_am=new Date().toISOString();
-      result=await sb.from("auftraege").insert(payload);
+      // select() liefert direkt die tatsächlich gespeicherte Zeile zurück.
+      result=await sb.from("auftraege").insert(payload).select("*").single();
     }
 
     if(result.error){
       console.error("Auftrag speichern:",result.error);
       throw new Error(result.error.message || "Unbekannter Supabase-Fehler");
     }
-
-    await loadData();
-    const saved = dataCache.orders.some(o => id ? String(o.id)===String(id) : String(o.auftragsnummer||"")===String(payload.auftragsnummer));
-    if(!saved){
-      throw new Error("Supabase hat den Auftrag angenommen, aber er konnte danach nicht wieder gelesen werden. Bitte prüfe im Supabase SQL-Editor die Tabelle auftraege und die RLS-Schreib-/Leserechte.");
+    if(!result.data){
+      throw new Error("Supabase hat keine gespeicherte Auftragszeile zurückgegeben.");
     }
 
+    const savedRow=result.data;
+    if(id){
+      const idx=dataCache.orders.findIndex(o=>String(o.id)===String(id));
+      if(idx>=0) dataCache.orders[idx]=savedRow;
+      else dataCache.orders.unshift(savedRow);
+    }else{
+      dataCache.orders.unshift(savedRow);
+    }
+
+    renderOrders();
+    renderCalendar();
     closeOrderModal();
     showSection("auftraege");
   } catch(error){
-    console.error(error);
-    showOrderModalError("Auftrag konnte nicht gespeichert werden: " + error.message);
+    console.error("Auftrag speichern:",error);
+    showOrderModalError("Auftrag konnte nicht gespeichert werden: " + (error?.message || String(error)));
   } finally {
     if(saveBtn) saveBtn.disabled=false;
   }
+  return false;
 }
 async function deleteOrder(id){
   if(!id || !sb) return;
