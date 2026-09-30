@@ -706,8 +706,9 @@ async function saveOrder(e){
 
     renderOrders();
     renderCalendar();
-    closeOrderModal();
     showSection("auftraege");
+    // Erst schließen, nachdem die gespeicherte Zeile im lokalen Auftragsspeicher steht.
+    closeOrderModal();
   } catch(error){
     console.error("Auftrag speichern:",error);
     showOrderModalError("Auftrag konnte nicht gespeichert werden: " + (error?.message || String(error)));
@@ -1236,6 +1237,5 @@ async function saveReviewedReceipt(originalReceipt){
   }
 }
 
-bindOrderForm();
 setupReceiptScanner();
 init();

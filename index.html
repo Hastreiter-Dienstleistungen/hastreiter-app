@@ -728,7 +728,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- WICHTIG: Cache-Version bei jeder neuen app.js-Version ändern -->
-  <script src="app.js?v=20260930-4"></script>
+  <script src="app.js?v=20260930-6"></script>
 
   <script>
     /*
@@ -757,7 +757,7 @@
         <div><h2 id="orderModalTitle">Neuer Auftrag</h2><p>Alle Kundendaten und die komplette Auftragsplanung.</p></div>
         <button type="button" id="orderModalClose" class="btn-secondary">✕</button>
       </div>
-      <form id="orderForm">
+      <form id="orderForm" onsubmit="return saveOrder(event);" novalidate>
         <input id="orderId" type="hidden">
         <div class="order-form-grid">
           <div class="order-field full"><label>Auftragsnummer<input id="orderNumber" readonly placeholder="wird automatisch vergeben"></label></div>
