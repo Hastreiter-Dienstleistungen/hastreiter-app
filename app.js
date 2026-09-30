@@ -201,17 +201,20 @@ function render(){
 
   renderOrders();
 
-  list("receiptList", dataCache.receipts, r =>
-    `<div class="item-card">
-      <div><b>${esc(r.lieferant || "Beleg")}</b><div>${esc(r.belegdatum || "")}</div></div>
-      <strong>${r.betrag != null ? euro(r.betrag) : "—"}</strong>
-    </div>`
-  );
+  list("receiptList", dataCache.receipts, r => {
+    const id = r.id || "";
+    return `<div class="item-card finance-card">
+      <div><b>${esc(r.lieferant || "Beleg")}</b><div>${esc(r.belegdatum || "")}</div><small>${esc(r.rechnungsnummer || r.beschreibung || "")}</small></div>
+      <div class="finance-row-actions"><strong>${r.betrag != null ? euro(r.betrag) : "—"}</strong>${id ? `<button type="button" class="btn-danger receipt-delete" data-receipt-id="${esc(id)}">🗑️ Löschen</button>` : ""}</div>
+    </div>`;
+  });
 
   renderCalendar();
+  renderEvaluations();
   drawChart();
   bindIncomeDeleteActions();
   bindExpenseDeleteActions();
+  bindReceiptDeleteActions();
 }
 
 function renderRequests(){
@@ -620,34 +623,84 @@ function openOrderModal(id=""){
 }
 
 async function saveOrder(e){
-  e.preventDefault(); if(!sb) return;
+  e.preventDefault();
+  if(!sb) return;
   showOrderModalError("");
+
   const id=getOrderField("orderId");
   const customer=getOrderField("orderCustomer");
+  const service=getOrderField("orderService");
   const start=getOrderField("orderStartDate");
   const end=getOrderField("orderEndDate");
-  if(!customer || !start || !getOrderField("orderService")){ showOrderModalError("Bitte Kunde, Leistung und Startdatum ausfüllen."); return; }
-  if(end && end<start){ showOrderModalError("Das Enddatum darf nicht vor dem Startdatum liegen."); return; }
+
+  if(!customer || !start || !service){
+    showOrderModalError("Bitte Kunde, Leistung und Startdatum ausfüllen.");
+    return;
+  }
+  if(end && end<start){
+    showOrderModalError("Das Enddatum darf nicht vor dem Startdatum liegen.");
+    return;
+  }
+
+  const duration = Number(getOrderField("orderDuration") || 60);
+  const priceText = getOrderField("orderPrice");
   const payload={
     auftragsnummer:getOrderField("orderNumber")||defaultOrderNumber(),
-    titel:getOrderField("orderService"),
-    leistung:getOrderField("orderService"),
-    kundenname:customer, kunde:customer, firma:getOrderField("orderCompany"),
-    ansprechpartner:getOrderField("orderContact"), telefon:getOrderField("orderPhone"), email:getOrderField("orderEmail"),
-    strasse:getOrderField("orderStreet"), plz:getOrderField("orderZip"), ort:getOrderField("orderCity"),
-    preis:toNumber(getOrderField("orderPrice")), status:getOrderField("orderStatus")||"Offen",
-    frequenz:getOrderField("orderFrequency")||"Einmalig", startdatum:start, enddatum:end||null,
-    uhrzeit:getOrderField("orderTime")||null, dauer_minuten:Number(getOrderField("orderDuration")||60),
-    beschreibung:getOrderField("orderDescription"), notizen:getOrderField("orderNotes"),
+    titel:service,
+    leistung:service,
+    kundenname:customer,
+    kunde:customer,
+    firma:getOrderField("orderCompany"),
+    ansprechpartner:getOrderField("orderContact"),
+    telefon:getOrderField("orderPhone"),
+    email:getOrderField("orderEmail"),
+    strasse:getOrderField("orderStreet"),
+    plz:getOrderField("orderZip"),
+    ort:getOrderField("orderCity"),
+    preis:priceText ? toNumber(priceText) : 0,
+    status:getOrderField("orderStatus")||"Offen",
+    frequenz:getOrderField("orderFrequency")||"Einmalig",
+    startdatum:start,
+    enddatum:end||null,
+    uhrzeit:getOrderField("orderTime")||null,
+    dauer_minuten:Number.isFinite(duration) && duration>0 ? duration : 60,
+    beschreibung:getOrderField("orderDescription"),
+    notizen:getOrderField("orderNotes"),
     aktualisiert_am:new Date().toISOString()
   };
-  let result;
-  if(id) result=await sb.from("auftraege").update(payload).eq("id",id).select().single();
-  else { payload.erstellt_am=new Date().toISOString(); result=await sb.from("auftraege").insert(payload).select().single(); }
-  if(result.error){ showOrderModalError("Auftrag konnte nicht gespeichert werden: "+result.error.message); return; }
-  closeOrderModal(); await loadData();
-}
 
+  const saveBtn=document.querySelector('#orderForm button[type="submit"]');
+  if(saveBtn) saveBtn.disabled=true;
+
+  try {
+    let result;
+    if(id){
+      result=await sb.from("auftraege").update(payload).eq("id",id);
+    }else{
+      payload.erstellt_am=new Date().toISOString();
+      result=await sb.from("auftraege").insert(payload);
+    }
+
+    if(result.error){
+      console.error("Auftrag speichern:",result.error);
+      throw new Error(result.error.message || "Unbekannter Supabase-Fehler");
+    }
+
+    await loadData();
+    const saved = dataCache.orders.some(o => id ? String(o.id)===String(id) : String(o.auftragsnummer||"")===String(payload.auftragsnummer));
+    if(!saved){
+      throw new Error("Supabase hat den Auftrag angenommen, aber er konnte danach nicht wieder gelesen werden. Bitte prüfe im Supabase SQL-Editor die Tabelle auftraege und die RLS-Schreib-/Leserechte.");
+    }
+
+    closeOrderModal();
+    showSection("auftraege");
+  } catch(error){
+    console.error(error);
+    showOrderModalError("Auftrag konnte nicht gespeichert werden: " + error.message);
+  } finally {
+    if(saveBtn) saveBtn.disabled=false;
+  }
+}
 async function deleteOrder(id){
   if(!id || !sb) return;
   if(!confirm("Möchtest du diesen Auftrag wirklich löschen? Die zugehörigen Termine werden damit ebenfalls nicht mehr im Auftragskalender angezeigt.")) return;
@@ -692,6 +745,31 @@ function renderCalendar(){
     }).join("")}</div>`;
   }).join("");
   grid.querySelectorAll(".calendar-event.order-event").forEach(b=>b.addEventListener("click",()=>openOrderModal(b.dataset.orderId)));
+}
+
+function renderEvaluations(){
+  const currentYear=String(new Date().getFullYear());
+  const totalIncome=dataCache.income
+    .filter(x=>String(x.datum||"").slice(0,4)===currentYear)
+    .reduce((sum,x)=>sum+amountOf(x),0);
+  const totalExpense=dataCache.expense
+    .filter(x=>String(x.datum||"").slice(0,4)===currentYear)
+    .reduce((sum,x)=>sum+amountOf(x),0);
+  setText("evaluationYear", currentYear);
+  setText("evaluationTotalIncome", euro(totalIncome));
+  setText("evaluationTotalExpense", euro(totalExpense));
+  setText("evaluationTotalResult", euro(totalIncome-totalExpense));
+}
+
+function bindReceiptDeleteActions(){
+  document.querySelectorAll(".receipt-delete").forEach(button=>button.addEventListener("click",async()=>{
+    const id=button.dataset.receiptId;
+    if(!id || !sb) return;
+    if(!confirm("Möchtest du diesen Beleg wirklich löschen? Die zugehörige Ausgabe bleibt dabei bestehen.")) return;
+    const {error}=await sb.from("belege").delete().eq("id",id);
+    if(error){alert("Beleg konnte nicht gelöscht werden: "+error.message);return;}
+    await loadData();
+  }));
 }
 
 function bindIncomeDeleteActions(){
