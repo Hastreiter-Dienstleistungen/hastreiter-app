@@ -266,6 +266,8 @@
       background:#fff;
     }
     .item-card strong{white-space:nowrap}
+    .finance-row-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .finance-row-actions .btn-danger,.receipt-actions-list .btn-danger{cursor:pointer;white-space:nowrap}
     .item-card small{color:var(--muted)}
     .badge{
       background:#edf4ef;
@@ -507,15 +509,21 @@
 
             <div class="stats">
               <div class="stat-card">
-                <div class="stat-label">Einnahmen</div>
+                <div class="stat-label">Einnahmen <span id="dashboardYear"></span></div>
                 <div id="statIncome" class="stat-value">0,00 €</div>
-                <div class="stat-foot">aktueller Monat</div>
+                <div class="stat-foot">gesamtes Jahr</div>
               </div>
 
               <div class="stat-card expense">
-                <div class="stat-label">Ausgaben</div>
+                <div class="stat-label">Ausgaben <span id="dashboardYearExpense"></span></div>
                 <div id="statExpense" class="stat-value">0,00 €</div>
-                <div class="stat-foot">aktueller Monat</div>
+                <div class="stat-foot">gesamtes Jahr</div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-label">Jahresergebnis <span id="dashboardYearResult"></span></div>
+                <div id="statResult" class="stat-value">0,00 €</div>
+                <div class="stat-foot">Einnahmen minus Ausgaben</div>
               </div>
 
               <div class="stat-card orders">
@@ -530,7 +538,6 @@
                 <div class="stat-foot">noch nicht bearbeitet</div>
               </div>
             </div>
-
             <div class="dashboard-grid">
               <div class="panel chart-panel">
                 <div class="panel-head">
@@ -550,20 +557,6 @@
               </div>
             </div>
 
-            <div class="summary-grid">
-              <div class="summary-card">
-                <div class="stat-label">Einnahmen Jahr <span id="dashboardYear"></span></div>
-                <div id="statIncomeYear" class="big">0,00 €</div>
-              </div>
-              <div class="summary-card">
-                <div class="stat-label">Ausgaben Jahr <span id="dashboardYearExpense"></span></div>
-                <div id="statExpenseYear" class="big">0,00 €</div>
-              </div>
-              <div class="summary-card">
-                <div class="stat-label">Jahresergebnis</div>
-                <div id="statResultYear" class="big">0,00 €</div>
-              </div>
-            </div>
           </section>
 
           <!-- ANFRAGEN -->
@@ -737,7 +730,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- WICHTIG: Cache-Version bei jeder neuen app.js-Version ändern -->
-  <script src="app.js?v=20260930-1"></script>
+  <script src="app.js?v=20260930-2"></script>
 
   <script>
     /*

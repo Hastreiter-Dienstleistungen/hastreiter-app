@@ -11,9 +11,29 @@ let dataCache = {
   appointments: [], cleaning: [], receipts: []
 };
 
+const toNumber = value => {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  let s = String(value ?? "").trim();
+  if (!s) return 0;
+  s = s.replace(/€/g, "").replace(/\s/g, "");
+  // Deutsche Schreibweise: 1.234,56 -> 1234.56
+  if (s.includes(",")) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  }
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+};
+
 const euro = n => new Intl.NumberFormat("de-DE", {
   style: "currency", currency: "EUR"
-}).format(Number(n || 0));
+}).format(toNumber(n));
+
+const amountOf = row => {
+  if (!row) return 0;
+  if (row.betrag !== null && row.betrag !== undefined && String(row.betrag).trim() !== "") return toNumber(row.betrag);
+  if (row.brutto !== null && row.brutto !== undefined && String(row.brutto).trim() !== "") return toNumber(row.brutto);
+  return 0;
+};
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
@@ -147,16 +167,8 @@ async function loadData(){
 }
 
 function render(){
-  const now = new Date();
-  const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-
-  const mi = dataCache.income
-    .filter(x => String(x.datum || "").slice(0,7) === month)
-    .reduce((s,x) => s + Number(x.betrag || 0), 0);
-
-  const me = dataCache.expense
-    .filter(x => String(x.datum || "").slice(0,7) === month)
-    .reduce((s,x) => s + Number(x.betrag || 0), 0);
+  const currentYear = new Date().getFullYear();
+  const yearText = String(currentYear);
 
   const openOrders = dataCache.orders
     .filter(x => !["Erledigt","Storniert"].includes(x.status)).length;
@@ -164,49 +176,56 @@ function render(){
   const newRequests = dataCache.requests
     .filter(x => (x.status || "Neu") === "Neu").length;
 
-  setText("statIncome", euro(mi));
-  setText("statExpense", euro(me));
+  const yearIncome = dataCache.income
+    .filter(x => String(x.datum || "").slice(0,4) === yearText)
+    .reduce((s,x) => s + amountOf(x), 0);
+  const yearExpense = dataCache.expense
+    .filter(x => String(x.datum || "").slice(0,4) === yearText)
+    .reduce((s,x) => s + amountOf(x), 0);
+
+  setText("statIncome", euro(yearIncome));
+  setText("statExpense", euro(yearExpense));
+  setText("statResult", euro(yearIncome - yearExpense));
   setText("statOrders", openOrders);
   setText("statRequests", newRequests);
   setText("requestBadge", newRequests);
+  setText("dashboardYear", currentYear);
+  setText("dashboardYearExpense", currentYear);
+  setText("dashboardYearResult", currentYear);
 
-  const totalIncome = dataCache.income.reduce((s,x) => s + Number(x.betrag || 0), 0);
-  const totalExpense = dataCache.expense.reduce((s,x) => s + Number(x.betrag || 0), 0);
+  const totalIncome = dataCache.income.reduce((s,x) => s + amountOf(x), 0);
+  const totalExpense = dataCache.expense.reduce((s,x) => s + amountOf(x), 0);
 
   setText("totalIncome", euro(totalIncome));
   setText("totalExpense", euro(totalExpense));
   setText("totalResult", euro(totalIncome - totalExpense));
 
-  const currentYear = new Date().getFullYear();
-  const yearIncome = dataCache.income
-    .filter(x => String(x.datum || "").slice(0,4) === String(currentYear))
-    .reduce((s,x) => s + Number(x.betrag || 0), 0);
-  const yearExpense = dataCache.expense
-    .filter(x => String(x.datum || "").slice(0,4) === String(currentYear))
-    .reduce((s,x) => s + Number(x.betrag || 0), 0);
-
-  setText("statIncomeYear", euro(yearIncome));
-  setText("statExpenseYear", euro(yearExpense));
-  setText("statResultYear", euro(yearIncome - yearExpense));
-  setText("dashboardYear", currentYear);
-  setText("dashboardYearExpense", currentYear);
-
   setupEvaluationControls();
   renderEvaluation(currentYear);
   renderRequests();
-  list("incomeList", dataCache.income, r =>
-    `<div class="item-card">
+  list("incomeList", dataCache.income, r => {
+    const id = r.id || r.rechnungsnummer || r.drive_datei_id || "";
+    return `<div class="item-card">
       <div><b>${esc(r.datum)}</b><div>${esc(r.beschreibung || "Einnahme")}</div></div>
-      <strong>${euro(r.betrag)}</strong>
-    </div>`
-  );
+      <div class="finance-row-actions">
+        <strong>${euro(amountOf(r))}</strong>
+        <button type="button" class="btn-danger income-delete" data-income-id="${esc(id)}">🗑️ Löschen</button>
+      </div>
+    </div>`;
+  });
+  bindIncomeDeleteActions();
 
-  list("expenseList", dataCache.expense, r =>
-    `<div class="item-card">
+  list("expenseList", dataCache.expense, r => {
+    const id = r.id || r.rechnungsnummer || r.drive_datei_id || "";
+    return `<div class="item-card">
       <div><b>${esc(r.datum)}</b><div>${esc(r.lieferant || r.beschreibung || "Ausgabe")}</div></div>
-      <strong>${euro(r.betrag)}</strong>
-    </div>`
-  );
+      <div class="finance-row-actions">
+        <strong>${euro(amountOf(r))}</strong>
+        <button type="button" class="btn-danger expense-delete" data-expense-id="${esc(id)}">🗑️ Löschen</button>
+      </div>
+    </div>`;
+  });
+  bindExpenseDeleteActions();
 
   list("ordersList", dataCache.orders, r =>
     `<div class="item-card">
@@ -260,8 +279,8 @@ function renderEvaluation(year){
   const income = dataCache.income.filter(x => String(x.datum || "").slice(0,4) === yearText);
   const expense = dataCache.expense.filter(x => String(x.datum || "").slice(0,4) === yearText);
 
-  const totalIncome = income.reduce((s,x) => s + Number(x.betrag || 0), 0);
-  const totalExpense = expense.reduce((s,x) => s + Number(x.betrag || 0), 0);
+  const totalIncome = income.reduce((s,x) => s + amountOf(x), 0);
+  const totalExpense = expense.reduce((s,x) => s + amountOf(x), 0);
 
   setText("evaluationYear", yearText);
   setText("evaluationYearExpense", yearText);
@@ -277,9 +296,9 @@ function renderEvaluation(year){
   const rows = monthNames.map((name, index) => {
     const month = `${yearText}-${String(index + 1).padStart(2,"0")}`;
     const mi = income.filter(x => String(x.datum || "").slice(0,7) === month)
-      .reduce((s,x) => s + Number(x.betrag || 0), 0);
+      .reduce((s,x) => s + amountOf(x), 0);
     const me = expense.filter(x => String(x.datum || "").slice(0,7) === month)
-      .reduce((s,x) => s + Number(x.betrag || 0), 0);
+      .reduce((s,x) => s + amountOf(x), 0);
     return `<tr>
       <td>${name}</td>
       <td>${euro(mi)}</td>
@@ -290,6 +309,52 @@ function renderEvaluation(year){
 
   const table = document.getElementById("evaluationMonthlyBody");
   if(table) table.innerHTML = rows;
+}
+
+function bindIncomeDeleteActions(){
+  document.querySelectorAll(".income-delete").forEach(button => {
+    button.addEventListener("click", async () => {
+      const id = button.dataset.incomeId;
+      if(!id) return;
+      if(!confirm("Möchtest du diese Einnahme wirklich löschen? Die Originaldatei in Google Drive bleibt erhalten.")) return;
+      await deleteIncome(id);
+    });
+  });
+}
+
+async function deleteIncome(id){
+  if(!sb || !id) return;
+  try {
+    const { error } = await sb.from("einnahmen").delete().eq("id", id);
+    if(error) throw new Error("Einnahme konnte nicht gelöscht werden: " + error.message);
+    await loadData();
+  } catch(error){
+    console.error(error);
+    alert(error.message);
+  }
+}
+
+function bindExpenseDeleteActions(){
+  document.querySelectorAll(".expense-delete").forEach(button => {
+    button.addEventListener("click", async () => {
+      const id = button.dataset.expenseId;
+      if(!id) return;
+      if(!confirm("Möchtest du diese Ausgabe wirklich löschen? Der zugehörige Beleg bleibt erhalten.")) return;
+      await deleteExpense(id);
+    });
+  });
+}
+
+async function deleteExpense(id){
+  if(!sb || !id) return;
+  try {
+    const { error } = await sb.from("ausgaben").delete().eq("id", id);
+    if(error) throw new Error("Ausgabe konnte nicht gelöscht werden: " + error.message);
+    await loadData();
+  } catch(error){
+    console.error(error);
+    alert(error.message);
+  }
 }
 
 function bindReceiptDeleteActions(){
@@ -585,27 +650,23 @@ function drawChart(){
   ctx.fillStyle = "#6c7770";
   ctx.font = "12px Arial";
 
-  const months = [...Array(6)].map((_,i) => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 5 + i);
-    return d;
-  });
+  const year = new Date().getFullYear();
+  const months = [...Array(12)].map((_,i) =>
+    `${year}-${String(i+1).padStart(2,"0")}`
+  );
 
-  const vals = months.map(d => {
-    const m = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
-    return [
-      dataCache.income.filter(x => String(x.datum || "").slice(0,7) === m)
-        .reduce((s,x) => s + Number(x.betrag || 0),0),
-      dataCache.expense.filter(x => String(x.datum || "").slice(0,7) === m)
-        .reduce((s,x) => s + Number(x.betrag || 0),0)
-    ];
-  });
+  const vals = months.map(m => [
+    dataCache.income.filter(x => String(x.datum || "").slice(0,7) === m)
+      .reduce((s,x) => s + amountOf(x),0),
+    dataCache.expense.filter(x => String(x.datum || "").slice(0,7) === m)
+      .reduce((s,x) => s + amountOf(x),0)
+  ]);
 
   const max = Math.max(100,...vals.flat()) * 1.15;
   const base = h - 35;
   const plotH = h - 60;
-  const bw = 22;
-  const gap = 75;
+  const bw = 13;
+  const gap = (w - 80) / 12;
 
   ctx.beginPath();
   ctx.moveTo(35,15);
@@ -614,7 +675,7 @@ function drawChart(){
   ctx.stroke();
 
   vals.forEach((v,i) => {
-    const x = 55 + i * gap;
+    const x = 45 + i * gap;
     const hi = (v[0]/max) * plotH;
     const he = (v[1]/max) * plotH;
 
@@ -622,11 +683,11 @@ function drawChart(){
     ctx.fillRect(x,base-hi,bw,hi);
 
     ctx.fillStyle = "#ed7412";
-    ctx.fillRect(x+bw+4,base-he,bw,he);
+    ctx.fillRect(x+bw+3,base-he,bw,he);
 
     ctx.fillStyle = "#6c7770";
     ctx.fillText(
-      months[i].toLocaleDateString("de-DE",{month:"short"}),
+      new Date(year, i, 1).toLocaleDateString("de-DE",{month:"short"}),
       x,
       base+18
     );
