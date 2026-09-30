@@ -147,7 +147,8 @@ async function loadData(){
 }
 
 function render(){
-  const month = new Date().toISOString().slice(0,7);
+  const now = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
 
   const mi = dataCache.income
     .filter(x => String(x.datum || "").slice(0,7) === month)
@@ -176,6 +177,22 @@ function render(){
   setText("totalExpense", euro(totalExpense));
   setText("totalResult", euro(totalIncome - totalExpense));
 
+  const currentYear = new Date().getFullYear();
+  const yearIncome = dataCache.income
+    .filter(x => String(x.datum || "").slice(0,4) === String(currentYear))
+    .reduce((s,x) => s + Number(x.betrag || 0), 0);
+  const yearExpense = dataCache.expense
+    .filter(x => String(x.datum || "").slice(0,4) === String(currentYear))
+    .reduce((s,x) => s + Number(x.betrag || 0), 0);
+
+  setText("statIncomeYear", euro(yearIncome));
+  setText("statExpenseYear", euro(yearExpense));
+  setText("statResultYear", euro(yearIncome - yearExpense));
+  setText("dashboardYear", currentYear);
+  setText("dashboardYearExpense", currentYear);
+
+  setupEvaluationControls();
+  renderEvaluation(currentYear);
   renderRequests();
   list("incomeList", dataCache.income, r =>
     `<div class="item-card">
@@ -205,12 +222,21 @@ function render(){
     </div>`
   );
 
-  list("receiptList", dataCache.receipts, r =>
-    `<div class="item-card">
-      <div><b>${esc(r.lieferant || "Beleg")}</b><div>${esc(r.belegdatum || "")}</div></div>
-      <strong>${r.betrag != null ? euro(r.betrag) : "—"}</strong>
-    </div>`
-  );
+  list("receiptList", dataCache.receipts, r => {
+    const id = r.id || "";
+    return `<div class="item-card receipt-card">
+      <div>
+        <b>${esc(r.lieferant || "Beleg")}</b>
+        <div>${esc(r.belegdatum || "")}</div>
+        ${r.rechnungsnummer ? `<small>Nr. ${esc(r.rechnungsnummer)}</small>` : ""}
+      </div>
+      <div class="receipt-actions-list">
+        <strong>${r.betrag != null ? euro(r.betrag) : "—"}</strong>
+        <button type="button" class="btn-danger receipt-delete" data-receipt-id="${esc(id)}">🗑️ Löschen</button>
+      </div>
+    </div>`;
+  });
+  bindReceiptDeleteActions();
 
   list("calendarList", dataCache.appointments, r =>
     `<div class="calendar-row">
@@ -227,6 +253,89 @@ function render(){
   );
 
   drawChart();
+}
+
+function renderEvaluation(year){
+  const yearText = String(year);
+  const income = dataCache.income.filter(x => String(x.datum || "").slice(0,4) === yearText);
+  const expense = dataCache.expense.filter(x => String(x.datum || "").slice(0,4) === yearText);
+
+  const totalIncome = income.reduce((s,x) => s + Number(x.betrag || 0), 0);
+  const totalExpense = expense.reduce((s,x) => s + Number(x.betrag || 0), 0);
+
+  setText("evaluationYear", yearText);
+  setText("evaluationYearExpense", yearText);
+  setText("evaluationTotalIncome", euro(totalIncome));
+  setText("evaluationTotalExpense", euro(totalExpense));
+  setText("evaluationTotalResult", euro(totalIncome - totalExpense));
+
+  const monthNames = [
+    "Januar","Februar","März","April","Mai","Juni",
+    "Juli","August","September","Oktober","November","Dezember"
+  ];
+
+  const rows = monthNames.map((name, index) => {
+    const month = `${yearText}-${String(index + 1).padStart(2,"0")}`;
+    const mi = income.filter(x => String(x.datum || "").slice(0,7) === month)
+      .reduce((s,x) => s + Number(x.betrag || 0), 0);
+    const me = expense.filter(x => String(x.datum || "").slice(0,7) === month)
+      .reduce((s,x) => s + Number(x.betrag || 0), 0);
+    return `<tr>
+      <td>${name}</td>
+      <td>${euro(mi)}</td>
+      <td>${euro(me)}</td>
+      <td>${euro(mi - me)}</td>
+    </tr>`;
+  }).join("");
+
+  const table = document.getElementById("evaluationMonthlyBody");
+  if(table) table.innerHTML = rows;
+}
+
+function bindReceiptDeleteActions(){
+  document.querySelectorAll(".receipt-delete").forEach(button => {
+    button.addEventListener("click", async () => {
+      const id = button.dataset.receiptId;
+      if(!id) return;
+      if(!confirm("Möchtest du diesen Beleg wirklich löschen? Die zugehörige Ausgabe wird ebenfalls aus der App gelöscht.")) return;
+      await deleteReceipt(id);
+    });
+  });
+}
+
+async function deleteReceipt(id){
+  if(!sb || !id) return;
+
+  const receipt = dataCache.receipts.find(x => String(x.id) === String(id));
+  if(!receipt){
+    alert("Beleg wurde nicht gefunden.");
+    return;
+  }
+
+  try {
+    // Die zugehörige Ausgabe wird anhand der beim Speichern gesetzten
+    // Drive-Datei-ID gefunden. Fallback: Rechnungsnummer + Datum.
+    if(receipt.drive_datei_id){
+      const { error: expenseError } = await sb.from("ausgaben")
+        .delete().eq("drive_datei_id", receipt.drive_datei_id);
+      if(expenseError) throw new Error("Zugehörige Ausgabe konnte nicht gelöscht werden: " + expenseError.message);
+    } else if(receipt.rechnungsnummer){
+      const { error: expenseError } = await sb.from("ausgaben")
+        .delete()
+        .eq("rechnungsnummer", receipt.rechnungsnummer)
+        .eq("datum", receipt.belegdatum);
+      if(expenseError) throw new Error("Zugehörige Ausgabe konnte nicht gelöscht werden: " + expenseError.message);
+    }
+
+    const { error } = await sb.from("belege").delete().eq("id", id);
+    if(error) throw new Error("Beleg konnte nicht gelöscht werden: " + error.message);
+
+    await loadData();
+    alert("Beleg wurde gelöscht.");
+  } catch(error){
+    console.error(error);
+    alert(error.message);
+  }
 }
 
 function renderRequests(){
@@ -483,7 +592,7 @@ function drawChart(){
   });
 
   const vals = months.map(d => {
-    const m = d.toISOString().slice(0,7);
+    const m = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
     return [
       dataCache.income.filter(x => String(x.datum || "").slice(0,7) === m)
         .reduce((s,x) => s + Number(x.betrag || 0),0),
@@ -625,14 +734,7 @@ async function processReceiptFile(file){
       })
     });
 
-    const raw = await response.text();
-    let result;
-    try {
-      result = JSON.parse(raw);
-    } catch (_) {
-      const preview = String(raw || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 240);
-      throw new Error("Google Apps Script liefert keine JSON-Antwort. Bitte die Web-App-Bereitstellung prüfen. Antwort: " + (preview || "leer"));
-    }
+    const result = await response.json();
     if(!result.success) throw new Error(result.error || "Beleg konnte nicht verarbeitet werden.");
 
     setReceiptStatus(result.message || "Beleg erkannt.");
@@ -944,13 +1046,7 @@ async function saveReviewedReceipt(originalReceipt){
       })
     });
 
-    const sheetRaw = await sheetResponse.text();
-    let sheetResult;
-    try {
-      sheetResult = JSON.parse(sheetRaw);
-    } catch (_) {
-      throw new Error("Google Sheets liefert keine JSON-Antwort beim Belegspeichern.");
-    }
+    const sheetResult = await sheetResponse.json();
     if(!sheetResult.success){
       throw new Error("Beleg und Ausgabe gespeichert, aber Google Sheets meldet einen Fehler: " + (sheetResult.error || "unbekannter Fehler"));
     }
@@ -967,5 +1063,24 @@ async function saveReviewedReceipt(originalReceipt){
   }
 }
 
+function setupEvaluationControls(){
+  const select = document.getElementById("evaluationYearSelect");
+  if(!select) return;
+
+  const years = new Set([new Date().getFullYear()]);
+  [...dataCache.income, ...dataCache.expense].forEach(row => {
+    const year = String(row.datum || "").slice(0,4);
+    if(/^\d{4}$/.test(year)) years.add(Number(year));
+  });
+
+  const current = Number(select.value) || new Date().getFullYear();
+  select.innerHTML = [...years].sort((a,b) => b-a)
+    .map(year => `<option value="${year}">${year}</option>`).join("");
+  select.value = years.has(current) ? String(current) : String(Math.max(...years));
+
+  select.onchange = () => renderEvaluation(Number(select.value));
+}
+
 setupReceiptScanner();
+setupEvaluationControls();
 init();

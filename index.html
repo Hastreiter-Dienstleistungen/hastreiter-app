@@ -325,6 +325,10 @@
       background:#fff;border:1px solid var(--border);border-radius:18px;padding:22px
     }
     .summary-card .big{font-size:28px;font-weight:900;margin-top:7px}
+    .receipt-actions-list{display:flex;align-items:center;gap:12px}
+    .receipt-delete{padding:7px 10px;font-size:12px}
+    .evaluation-controls{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+    .evaluation-controls select{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:15px}
 
     .mobile-only{display:none}
 
@@ -548,16 +552,16 @@
 
             <div class="summary-grid">
               <div class="summary-card">
-                <div class="stat-label">Gesamteinnahmen</div>
-                <div id="evaluationTotalIncome" class="big">0,00 €</div>
+                <div class="stat-label">Einnahmen Jahr <span id="dashboardYear"></span></div>
+                <div id="statIncomeYear" class="big">0,00 €</div>
               </div>
               <div class="summary-card">
-                <div class="stat-label">Gesamtausgaben</div>
-                <div id="evaluationTotalExpense" class="big">0,00 €</div>
+                <div class="stat-label">Ausgaben Jahr <span id="dashboardYearExpense"></span></div>
+                <div id="statExpenseYear" class="big">0,00 €</div>
               </div>
               <div class="summary-card">
-                <div class="stat-label">Ergebnis</div>
-                <div id="evaluationTotalResult" class="big">0,00 €</div>
+                <div class="stat-label">Jahresergebnis</div>
+                <div id="statResultYear" class="big">0,00 €</div>
               </div>
             </div>
           </section>
@@ -684,24 +688,44 @@
           <section id="auswertungen" class="section">
             <div class="section-head">
               <h1>Auswertungen</h1>
-              <p>Überblick über Einnahmen und Ausgaben.</p>
+              <p>Jahresübersicht und monatliche Berechnung von Einnahmen, Ausgaben und Ergebnis.</p>
+            </div>
+
+            <div class="evaluation-controls">
+              <label for="evaluationYearSelect"><b>Jahr:</b></label>
+              <select id="evaluationYearSelect">
+                <option value="2026">2026</option>
+              </select>
             </div>
 
             <div class="summary-grid">
               <div class="summary-card">
-                <div class="stat-label">Gesamteinnahmen</div>
+                <div class="stat-label">Einnahmen <span id="evaluationYear">2026</span></div>
                 <div id="evaluationTotalIncome" class="big">0,00 €</div>
               </div>
               <div class="summary-card">
-                <div class="stat-label">Gesamtausgaben</div>
+                <div class="stat-label">Ausgaben <span id="evaluationYearExpense">2026</span></div>
                 <div id="evaluationTotalExpense" class="big">0,00 €</div>
               </div>
               <div class="summary-card">
-                <div class="stat-label">Ergebnis</div>
+                <div class="stat-label">Jahresergebnis</div>
                 <div id="evaluationTotalResult" class="big">0,00 €</div>
               </div>
             </div>
 
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Monatliche Berechnung</h2>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Monat</th><th>Einnahmen</th><th>Ausgaben</th><th>Ergebnis</th></tr>
+                  </thead>
+                  <tbody id="evaluationMonthlyBody"></tbody>
+                </table>
+              </div>
+            </div>
           </section>
 
         </div>
@@ -713,7 +737,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- WICHTIG: Cache-Version bei jeder neuen app.js-Version ändern -->
-  <script src="app.js?v=20260929-5"></script>
+  <script src="app.js?v=20260930-1"></script>
 
   <script>
     /*
