@@ -1238,4 +1238,13 @@ async function saveReviewedReceipt(originalReceipt){
 }
 
 setupReceiptScanner();
+
+// Das Auftragsformular steht in index.html bewusst hinter dem app.js-Script.
+// Deshalb werden seine Buttons erst nach dem vollständigen Laden der Seite gebunden.
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bindOrderForm, { once: true });
+} else {
+  bindOrderForm();
+}
+
 init();
